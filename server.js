@@ -94,6 +94,12 @@ function decodeHtmlEntities(text) {
     .replaceAll("&quot;", "\"");
 }
 
+function decodeXmlEntities(text) {
+  return decodeHtmlEntities(String(text))
+    .replace(/&#x([0-9a-f]+);/gi, (_match, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_match, decimal) => String.fromCodePoint(parseInt(decimal, 10)));
+}
+
 function textFromRuns(value) {
   if (!value) {
     return "";
@@ -142,6 +148,112 @@ function parseCaptionEvents(json) {
   }
 
   return cues;
+}
+
+function parseTranscriptXml(xml) {
+  const cues = [];
+  const pattern = /<text\b([^>]*)>([\s\S]*?)<\/text>/gi;
+  let match = pattern.exec(xml);
+
+  while (match) {
+    const attrs = match[1] || "";
+    const body = match[2] || "";
+    const startMatch = attrs.match(/\bstart="([^"]+)"/i);
+    const durationMatch = attrs.match(/\bdur="([^"]+)"/i);
+    const start = Number(startMatch?.[1]);
+    const duration = Number(durationMatch?.[1]);
+    const text = normalizeCueText(decodeXmlEntities(body));
+
+    if (Number.isFinite(start) && Number.isFinite(duration) && text) {
+      cues.push({
+        start,
+        end: start + duration,
+        text,
+        translation: ""
+      });
+    }
+
+    match = pattern.exec(xml);
+  }
+
+  return cues;
+}
+
+function normalizeProxySubtitleEntry(entry) {
+  const start = Number(entry?.start);
+  const end = Number(entry?.end ?? start + Number(entry?.dur || 0));
+  const text = normalizeCueText(entry?.text || entry?.utf8 || entry?.original || "");
+  const translation = normalizeCueText(entry?.translation || entry?.ja || "");
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) || !text) {
+    return null;
+  }
+
+  return {
+    start,
+    end: end > start ? end : start + 2,
+    text,
+    translation
+  };
+}
+
+async function fetchTranscriptFromProxy(videoId, targetLanguage, provider = "google") {
+  const proxyBaseUrl = process.env.CAPTION_WORKER_URL || process.env.TRANSCRIPT_PROXY_URL || "";
+  if (!proxyBaseUrl) {
+    return null;
+  }
+
+  const proxyUrl = new URL(proxyBaseUrl);
+  if (!proxyUrl.searchParams.has("id")) {
+    proxyUrl.searchParams.set("id", videoId);
+  }
+
+  const response = await fetch(proxyUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 Codex Transcript Proxy Client",
+      "Accept": "application/json,text/xml,text/plain,*/*"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Caption proxy failed: ${response.status}`);
+  }
+
+  const raw = await response.text();
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    throw new Error("Caption proxy returned an empty body.");
+  }
+
+  let subtitles = [];
+  if (trimmed.startsWith("<")) {
+    subtitles = parseTranscriptXml(trimmed);
+  } else {
+    const parsed = JSON.parse(trimmed);
+    subtitles = Array.isArray(parsed)
+      ? parsed.map(normalizeProxySubtitleEntry).filter(Boolean)
+      : [];
+  }
+
+  if (!subtitles.length) {
+    throw new Error("Caption proxy returned no subtitle cues.");
+  }
+
+  const translatedSubtitles = await translateCues(subtitles, targetLanguage, "en", provider);
+  return {
+    source: "proxy",
+    videoId,
+    selectedTrackIndex: 0,
+    trackLabel: "English / proxy",
+    availableTracks: [
+      {
+        label: "English / proxy",
+        languageCode: "en",
+        kind: "proxy"
+      }
+    ],
+    subtitles: translatedSubtitles
+  };
 }
 
 function mergeTracks(originalCues, translatedCues) {
@@ -764,26 +876,34 @@ async function getTranscriptWithFallback(videoId, trackIndex, language, provider
 }
 
 async function getYoutubeTranscriptOnly(videoId, trackIndex, language, provider = "google") {
-  const trackData = await fetchCaptionTracks(videoId);
-  const tracks = trackData.tracks;
-  const fallbackIndex = chooseDefaultTrackIndex(tracks, trackData.defaultTrackIndex);
-  const normalizedTrackIndex = Number.isInteger(trackIndex) && trackIndex >= 0 ? trackIndex : fallbackIndex;
-  const selectedTrack = tracks[normalizedTrackIndex] || tracks[fallbackIndex] || tracks[0];
-  const selectedTrackIndex = tracks.findIndex((track) => track.baseUrl === selectedTrack.baseUrl);
-  const subtitles = await fetchTrackCues(selectedTrack, language, provider);
+  try {
+    const trackData = await fetchCaptionTracks(videoId);
+    const tracks = trackData.tracks;
+    const fallbackIndex = chooseDefaultTrackIndex(tracks, trackData.defaultTrackIndex);
+    const normalizedTrackIndex = Number.isInteger(trackIndex) && trackIndex >= 0 ? trackIndex : fallbackIndex;
+    const selectedTrack = tracks[normalizedTrackIndex] || tracks[fallbackIndex] || tracks[0];
+    const selectedTrackIndex = tracks.findIndex((track) => track.baseUrl === selectedTrack.baseUrl);
+    const subtitles = await fetchTrackCues(selectedTrack, language, provider);
 
-  return {
-    source: "youtube",
-    videoId,
-    selectedTrackIndex,
-    trackLabel: selectedTrack.label,
-    availableTracks: tracks.map((track) => ({
-      label: track.label,
-      languageCode: track.languageCode,
-      kind: track.kind
-    })),
-    subtitles
-  };
+    return {
+      source: "youtube",
+      videoId,
+      selectedTrackIndex,
+      trackLabel: selectedTrack.label,
+      availableTracks: tracks.map((track) => ({
+        label: track.label,
+        languageCode: track.languageCode,
+        kind: track.kind
+      })),
+      subtitles
+    };
+  } catch (error) {
+    const proxyPayload = await fetchTranscriptFromProxy(videoId, language, provider).catch(() => null);
+    if (proxyPayload) {
+      return proxyPayload;
+    }
+    throw error;
+  }
 }
 
 async function getTranscriptWithAggressiveFallback(videoId, trackIndex, language, provider = "google") {
