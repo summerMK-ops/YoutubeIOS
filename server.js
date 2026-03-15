@@ -37,9 +37,15 @@ function createRequestHeaders(extraHeaders = {}) {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Origin": "https://www.youtube.com",
     "Referer": "https://www.youtube.com/",
-    "Cookie": process.env.YOUTUBE_COOKIE || "CONSENT=YES+1",
     ...extraHeaders
   };
+}
+
+function createYoutubePageHeaders(extraHeaders = {}) {
+  return createRequestHeaders({
+    "Cookie": process.env.YOUTUBE_COOKIE || "CONSENT=YES+1",
+    ...extraHeaders
+  });
 }
 
 function sendJson(response, statusCode, payload) {
@@ -302,7 +308,7 @@ function extractAnyJsonObject(html, markers) {
 
 async function fetchPage(url) {
   const response = await fetch(url, {
-    headers: createRequestHeaders()
+    headers: createYoutubePageHeaders()
   });
 
   if (!response.ok) {
@@ -410,35 +416,19 @@ async function fetchRecommendations(videoId) {
 
 async function fetchCaptionTracksFromYoutubei(videoId, client) {
   const innertube = await getInnertube();
-  let info = null;
-  let lastError = null;
+  const info = await innertube.getBasicInfo(videoId, { client });
+  const tracks = Array.isArray(info?.captions?.caption_tracks) ? info.captions.caption_tracks : [];
 
-  for (const method of ["getInfo", "getBasicInfo"]) {
-    try {
-      info = await innertube[method](videoId, { client });
-      const tracks = Array.isArray(info?.captions?.caption_tracks) ? info.captions.caption_tracks : [];
-      if (tracks.length) {
-        return {
-          defaultTrackIndex: 0,
-          tracks: tracks.map((track) => ({
-            baseUrl: track.base_url,
-            languageCode: track.language_code,
-            kind: track.kind || "",
-            isTranslatable: Boolean(track.is_translatable),
-            label: trackLabelFrom(track)
-          }))
-        };
-      }
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  if (lastError) {
-    throw lastError;
-  }
-
-  return { defaultTrackIndex: 0, tracks: [] };
+  return {
+    defaultTrackIndex: 0,
+    tracks: tracks.map((track) => ({
+      baseUrl: track.base_url,
+      languageCode: track.language_code,
+      kind: track.kind || "",
+      isTranslatable: Boolean(track.is_translatable),
+      label: trackLabelFrom(track)
+    }))
+  };
 }
 
 async function fetchCaptionTracks(videoId) {
@@ -503,7 +493,9 @@ function buildTimedTextTrack(videoId, languageCode, kind = "") {
 
 async function fetchTrackCues(track, targetLanguage, provider = "google") {
   const originalResponse = await fetch(buildTrackUrl(track.baseUrl), {
-    headers: createRequestHeaders()
+    headers: createYoutubePageHeaders({
+      "Accept": "application/json,text/plain,*/*"
+    })
   });
 
   if (!originalResponse.ok) {
@@ -858,7 +850,7 @@ async function fetchCaptionTracks(videoId) {
   ]) {
     try {
       const response = await fetch(track.baseUrl, {
-        headers: createRequestHeaders({
+        headers: createYoutubePageHeaders({
           "Accept": "application/json,text/plain,*/*"
         })
       });
