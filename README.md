@@ -10,9 +10,19 @@ header: mini
 short_description: YouTube subtitle learning player for iPhone Safari
 ---
 
-# Trancy
+# EnglishIOS
 
 YouTube subtitle learning player optimized for iPhone Safari.
+
+## Render + Worker
+
+Render alone is often blocked by YouTube for subtitle access. This repo supports using a Cloudflare Worker as a subtitle-only proxy.
+
+1. Deploy [cloudflare-worker.js](/C:/Users/bkiqq/OneDrive/デスクトップ/YoutubeIOS/cloudflare-worker.js) to Cloudflare Workers.
+2. Set `CAPTION_WORKER_URL=https://YOUR-WORKER.workers.dev/` on Render.
+3. Redeploy Render.
+
+Details are in [CLOUDFLARE_WORKER.md](/C:/Users/bkiqq/OneDrive/デスクトップ/YoutubeIOS/CLOUDFLARE_WORKER.md).
 
 ## Hugging Face Spaces
 
