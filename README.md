@@ -1,6 +1,43 @@
+---
+title: Trancy
+emoji: "📺"
+colorFrom: indigo
+colorTo: gray
+sdk: docker
+app_port: 7860
+fullWidth: true
+header: mini
+short_description: YouTube subtitle learning player for iPhone Safari
+---
+
 # Trancy
 
-YouTube subtitle learning player for iPhone Safari.
+YouTube subtitle learning player optimized for iPhone Safari.
+
+## Hugging Face Spaces
+
+This repository is prepared for a Docker Space.
+
+### Required files
+
+- `README.md` with the YAML block above
+- `Dockerfile`
+- `manifest.webmanifest`
+- `sw.js`
+
+### Runtime
+
+The app listens on:
+
+- `HOST=0.0.0.0`
+- `PORT=7860`
+
+## Deploy to Hugging Face Spaces
+
+1. Create a new Space on Hugging Face.
+2. Choose `Docker` as the SDK.
+3. Push this repository to the Space repo.
+4. Wait for the Docker build to finish.
 
 ## Local Run
 
@@ -9,44 +46,3 @@ npm start
 ```
 
 Open `http://localhost:3000`.
-
-## Public Deploy
-
-This project is prepared for Render.
-
-### Option A: Render Blueprint
-
-1. Push this folder to GitHub.
-2. In Render, create a new Blueprint and connect the repo.
-3. Render will read `render.yaml`, run `npm install`, and start the app with `npm start`.
-
-### Option B: Standard Node Web Service
-
-Use these settings:
-
-- Build Command: `npm install`
-- Start Command: `npm start`
-- Environment: `HOST=0.0.0.0`
-
-## iPhone Home Screen
-
-After the app is deployed:
-
-1. Open the deployed URL in Safari on iPhone.
-2. Tap Share.
-3. Tap `Add to Home Screen`.
-4. Launch it from the home screen for standalone app-like mode.
-
-## Added for Deployment
-
-- `render.yaml`: Render deployment config
-- `manifest.webmanifest`: install metadata
-- `sw.js`: basic app shell caching
-- `icons/`: home screen and manifest icons
-
-## API
-
-- `/api/search?q=keyword`
-- `/api/recommendations?videoId=...`
-- `/api/transcript?videoId=...&lang=ja`
-- `/api/dictionary?word=...`

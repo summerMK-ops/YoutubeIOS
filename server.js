@@ -1010,6 +1010,28 @@ async function serveStatic(requestUrl, response) {
   }
 }
 
+async function handleTranscriptApi(requestUrl, response) {
+  const videoId = extractVideoId(requestUrl.searchParams.get("videoId"));
+  const trackIndex = Number(requestUrl.searchParams.get("trackIndex") || "0");
+  const language = requestUrl.searchParams.get("lang") || "ja";
+  const provider = requestUrl.searchParams.get("provider") || "google";
+
+  if (!videoId) {
+    sendJson(response, 400, { error: "Missing or invalid videoId." });
+    return;
+  }
+
+  try {
+    const payload = await getTranscriptWithAggressiveFallback(videoId, trackIndex, language, provider);
+    sendJson(response, 200, payload);
+  } catch (error) {
+    console.error(`[transcript] failed for videoId=${videoId} trackIndex=${trackIndex} lang=${language} provider=${provider}`, error);
+    sendJson(response, 500, {
+      error: error.message || "Failed to fetch transcript."
+    });
+  }
+}
+
 const server = http.createServer(async (request, response) => {
   const requestUrl = new URL(request.url, `http://${request.headers.host}`);
 
