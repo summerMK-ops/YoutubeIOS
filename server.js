@@ -410,19 +410,35 @@ async function fetchRecommendations(videoId) {
 
 async function fetchCaptionTracksFromYoutubei(videoId, client) {
   const innertube = await getInnertube();
-  const info = await innertube.getBasicInfo(videoId, { client });
-  const tracks = Array.isArray(info.captions?.caption_tracks) ? info.captions.caption_tracks : [];
+  let info = null;
+  let lastError = null;
 
-  return {
-    defaultTrackIndex: 0,
-    tracks: tracks.map((track) => ({
-      baseUrl: track.base_url,
-      languageCode: track.language_code,
-      kind: track.kind || "",
-      isTranslatable: Boolean(track.is_translatable),
-      label: trackLabelFrom(track)
-    }))
-  };
+  for (const method of ["getInfo", "getBasicInfo"]) {
+    try {
+      info = await innertube[method](videoId, { client });
+      const tracks = Array.isArray(info?.captions?.caption_tracks) ? info.captions.caption_tracks : [];
+      if (tracks.length) {
+        return {
+          defaultTrackIndex: 0,
+          tracks: tracks.map((track) => ({
+            baseUrl: track.base_url,
+            languageCode: track.language_code,
+            kind: track.kind || "",
+            isTranslatable: Boolean(track.is_translatable),
+            label: trackLabelFrom(track)
+          }))
+        };
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  return { defaultTrackIndex: 0, tracks: [] };
 }
 
 async function fetchCaptionTracks(videoId) {
@@ -864,7 +880,11 @@ async function fetchCaptionTracks(videoId) {
   }
 
   try {
-    const info = await ytdl.getInfo(videoId);
+    const info = await ytdl.getInfo(videoId, {
+      requestOptions: {
+        headers: createRequestHeaders()
+      }
+    });
     const ytdlTracks = info?.player_response?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
     if (ytdlTracks.length) {
       const defaultTrackIndex = info?.player_response?.captions?.playerCaptionsTracklistRenderer?.audioTracks?.[0]?.defaultCaptionTrackIndex ?? 0;
