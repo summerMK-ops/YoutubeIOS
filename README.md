@@ -46,6 +46,8 @@ Koyeb is a good fit for this repository because it can build the existing Docker
 
 Detailed steps are in [KOYEB_DEPLOY.md](/C:/Users/bkiqq/OneDrive/デスクトップ/YoutubeIOS/KOYEB_DEPLOY.md).
 
+If Koyeb logs show `Sign in to confirm you're not a bot`, set `YT_DLP_COOKIES` or `YT_DLP_COOKIES_BASE64` in the Koyeb environment.
+
 ## Hugging Face Spaces
 
 This repository is prepared for a Docker Space.

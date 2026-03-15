@@ -756,6 +756,24 @@ async function runYtDlp(args, options = {}) {
   return runCommand(ytDlpBinary, args, options);
 }
 
+async function getYtDlpCookieArgs(tempDir) {
+  const cookieText = process.env.YT_DLP_COOKIES || process.env.YOUTUBE_COOKIES || "";
+  const cookieBase64 = process.env.YT_DLP_COOKIES_BASE64 || "";
+
+  let resolvedCookieText = cookieText;
+  if (!resolvedCookieText && cookieBase64) {
+    resolvedCookieText = Buffer.from(cookieBase64, "base64").toString("utf8");
+  }
+
+  if (!resolvedCookieText.trim()) {
+    return [];
+  }
+
+  const cookiePath = path.join(tempDir, "youtube-cookies.txt");
+  await fsp.writeFile(cookiePath, resolvedCookieText, "utf8");
+  return ["--cookies", cookiePath];
+}
+
 async function findFirstFile(directory, predicate) {
   const names = await fsp.readdir(directory);
   const match = names.find(predicate);
@@ -766,7 +784,9 @@ async function fetchTranscriptWithYtDlp(videoId, language, provider = "google") 
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   return withTempDir(async (tempDir) => {
+    const cookieArgs = await getYtDlpCookieArgs(tempDir);
     await runYtDlp([
+      ...cookieArgs,
       "--skip-download",
       "--no-playlist",
       "--no-warnings",
@@ -815,7 +835,9 @@ async function downloadAudioWithYtDlp(videoId) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   return withTempDir(async (tempDir) => {
+    const cookieArgs = await getYtDlpCookieArgs(tempDir);
     await runYtDlp([
+      ...cookieArgs,
       "--no-playlist",
       "--no-warnings",
       "-f", "bestaudio",
