@@ -13,6 +13,7 @@ const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
 const cacheDir = path.join(rootDir, ".cache");
 const transcriptCacheDir = path.join(cacheDir, "transcripts");
+const ytDlpBinary = process.env.YT_DLP_BIN || "yt-dlp";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -713,7 +714,152 @@ function collectStream(stream) {
   });
 }
 
+function runCommand(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      ...options,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+
+    const stdoutChunks = [];
+    const stderrChunks = [];
+
+    child.stdout.on("data", (chunk) => stdoutChunks.push(chunk));
+    child.stderr.on("data", (chunk) => stderrChunks.push(chunk));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      const stdoutBuffer = Buffer.concat(stdoutChunks);
+      const stderrBuffer = Buffer.concat(stderrChunks);
+      const stdout = stdoutBuffer.toString("utf8");
+      const stderr = stderrBuffer.toString("utf8");
+
+      if (code !== 0) {
+        reject(new Error(`${command} exited with code ${code}: ${stderr || stdout}`.trim()));
+        return;
+      }
+
+      resolve({ stdout, stderr, stdoutBuffer, stderrBuffer });
+    });
+  });
+}
+
+async function withTempDir(callback) {
+  const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "yt-ios-"));
+  try {
+    return await callback(tempDir);
+  } finally {
+    await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+async function runYtDlp(args, options = {}) {
+  return runCommand(ytDlpBinary, args, options);
+}
+
+async function findFirstFile(directory, predicate) {
+  const names = await fsp.readdir(directory);
+  const match = names.find(predicate);
+  return match ? path.join(directory, match) : "";
+}
+
+async function fetchTranscriptWithYtDlp(videoId, language, provider = "google") {
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+  return withTempDir(async (tempDir) => {
+    await runYtDlp([
+      "--skip-download",
+      "--no-playlist",
+      "--no-warnings",
+      "--write-subs",
+      "--write-auto-subs",
+      "--sub-langs", "en.*,en",
+      "--sub-format", "json3",
+      "--output", "%(id)s.%(ext)s",
+      "--paths", tempDir,
+      videoUrl
+    ]);
+
+    const subtitlePath = await findFirstFile(
+      tempDir,
+      (name) => name.startsWith(`${videoId}.`) && name.endsWith(".json3")
+    );
+
+    if (!subtitlePath) {
+      throw new Error("yt-dlp did not produce an English subtitle file.");
+    }
+
+    const raw = await fsp.readFile(subtitlePath, "utf8");
+    const subtitles = await translateCues(parseCaptionEvents(JSON.parse(raw)), language, "en", provider);
+    if (!subtitles.length) {
+      throw new Error("yt-dlp subtitle file contained no cues.");
+    }
+
+    return {
+      source: "yt-dlp",
+      videoId,
+      selectedTrackIndex: 0,
+      trackLabel: "English / yt-dlp",
+      availableTracks: [
+        {
+          label: "English / yt-dlp",
+          languageCode: "en",
+          kind: "yt-dlp"
+        }
+      ],
+      subtitles
+    };
+  });
+}
+
+async function downloadAudioWithYtDlp(videoId) {
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+  return withTempDir(async (tempDir) => {
+    await runYtDlp([
+      "--no-playlist",
+      "--no-warnings",
+      "-f", "bestaudio",
+      "--output", "%(id)s.%(ext)s",
+      "--paths", tempDir,
+      videoUrl
+    ]);
+
+    const audioPath = await findFirstFile(
+      tempDir,
+      (name) => name.startsWith(`${videoId}.`) && !name.endsWith(".part")
+    );
+
+    if (!audioPath) {
+      throw new Error("yt-dlp did not produce an audio file.");
+    }
+
+    const { stdoutBuffer } = await runCommand(ffmpegPath, [
+      "-i", audioPath,
+      "-ac", "1",
+      "-ar", "16000",
+      "-f", "f32le",
+      "pipe:1"
+    ], {
+      cwd: tempDir
+    });
+
+    const buffer = stdoutBuffer;
+    const sampleCount = Math.floor(buffer.byteLength / 4);
+    const audio = new Float32Array(sampleCount);
+    for (let index = 0; index < sampleCount; index += 1) {
+      audio[index] = buffer.readFloatLE(index * 4);
+    }
+    return audio;
+  });
+}
+
 async function downloadAudioAsFloat32(videoId) {
+  try {
+    return await downloadAudioWithYtDlp(videoId);
+  } catch (error) {
+    console.warn(`[transcript] yt-dlp audio fallback failed for ${videoId}: ${String(error?.message || error)}`);
+  }
+
   return new Promise((resolve, reject) => {
     (async () => {
       const innertube = await getInnertube();
@@ -876,6 +1022,12 @@ async function getTranscriptWithFallback(videoId, trackIndex, language, provider
 }
 
 async function getYoutubeTranscriptOnly(videoId, trackIndex, language, provider = "google") {
+  try {
+    return await fetchTranscriptWithYtDlp(videoId, language, provider);
+  } catch (error) {
+    console.warn(`[transcript] yt-dlp subtitle lookup failed for ${videoId}: ${String(error?.message || error)}`);
+  }
+
   try {
     const trackData = await fetchCaptionTracks(videoId);
     const tracks = trackData.tracks;

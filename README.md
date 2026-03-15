@@ -24,6 +24,28 @@ Render alone is often blocked by YouTube for subtitle access. This repo supports
 
 Details are in [CLOUDFLARE_WORKER.md](/C:/Users/bkiqq/OneDrive/デスクトップ/YoutubeIOS/CLOUDFLARE_WORKER.md).
 
+## Fly.io + yt-dlp
+
+This repository now prefers `yt-dlp` for subtitle and audio extraction when it is available. The included [Dockerfile](/C:/Users/bkiqq/OneDrive/デスクトップ/YoutubeIOS/Dockerfile) installs both `yt-dlp` and `ffmpeg`, which makes it a better fit for Fly.io than Render.
+
+Deploying on Fly.io means:
+
+1. Build with the included Dockerfile.
+2. Expose port `7860`.
+3. Start with `npm start`.
+
+## Koyeb
+
+Koyeb is a good fit for this repository because it can build the existing Dockerfile directly from GitHub.
+
+1. Push the repo to GitHub.
+2. In Koyeb, create a `Web Service`.
+3. Choose `GitHub` as the source.
+4. Choose `Dockerfile` as the build method.
+5. Deploy the app.
+
+Detailed steps are in [KOYEB_DEPLOY.md](/C:/Users/bkiqq/OneDrive/デスクトップ/YoutubeIOS/KOYEB_DEPLOY.md).
+
 ## Hugging Face Spaces
 
 This repository is prepared for a Docker Space.
