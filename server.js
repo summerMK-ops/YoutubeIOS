@@ -34,6 +34,10 @@ function createRequestHeaders(extraHeaders = {}) {
   return {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
     "Accept-Language": "en-US,en;q=0.9,ja;q=0.8",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Origin": "https://www.youtube.com",
+    "Referer": "https://www.youtube.com/",
+    "Cookie": process.env.YOUTUBE_COOKIE || "CONSENT=YES+1",
     ...extraHeaders
   };
 }
@@ -463,6 +467,24 @@ function buildTrackUrl(baseUrl, options = {}) {
   return parsed.toString();
 }
 
+function buildTimedTextTrack(videoId, languageCode, kind = "") {
+  const parsed = new URL("https://www.youtube.com/api/timedtext");
+  parsed.searchParams.set("v", videoId);
+  parsed.searchParams.set("lang", languageCode);
+  parsed.searchParams.set("fmt", "json3");
+  if (kind) {
+    parsed.searchParams.set("kind", kind);
+  }
+
+  return {
+    baseUrl: parsed.toString(),
+    languageCode,
+    kind,
+    isTranslatable: false,
+    label: `${languageCode} / ${kind === "asr" ? "auto-generated" : "timedtext"}`
+  };
+}
+
 async function fetchTrackCues(track, targetLanguage, provider = "google") {
   const originalResponse = await fetch(buildTrackUrl(track.baseUrl), {
     headers: createRequestHeaders()
@@ -782,7 +804,7 @@ async function getTranscriptWithAggressiveFallback(videoId, trackIndex, language
 }
 
 async function fetchCaptionTracks(videoId) {
-  for (const client of ["IOS", "WEB"]) {
+  for (const client of ["ANDROID", "WEB", "IOS"]) {
     try {
       const trackData = await fetchCaptionTracksFromYoutubei(videoId, client);
       if (trackData.tracks.length) {
@@ -812,6 +834,33 @@ async function fetchCaptionTracks(videoId) {
     }
   } catch (error) {
     console.warn(`[transcript] html caption fallback failed for ${videoId}: ${String(error?.message || error)}`);
+  }
+
+  for (const track of [
+    buildTimedTextTrack(videoId, "en"),
+    buildTimedTextTrack(videoId, "en", "asr")
+  ]) {
+    try {
+      const response = await fetch(track.baseUrl, {
+        headers: createRequestHeaders({
+          "Accept": "application/json,text/plain,*/*"
+        })
+      });
+      const body = await response.text();
+      if (!response.ok || !body.trim()) {
+        continue;
+      }
+
+      const cues = parseCaptionEvents(JSON.parse(body));
+      if (cues.length) {
+        return {
+          defaultTrackIndex: 0,
+          tracks: [track]
+        };
+      }
+    } catch (error) {
+      console.warn(`[transcript] timedtext fallback failed for ${videoId} lang=${track.languageCode} kind=${track.kind || "default"}: ${String(error?.message || error)}`);
+    }
   }
 
   try {
