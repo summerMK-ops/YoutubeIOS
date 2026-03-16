@@ -790,31 +790,50 @@ async function fetchTranscriptWithYtDlp(videoId, language, provider = "google") 
 
   return withTempDir(async (tempDir) => {
     const cookieArgs = await getYtDlpCookieArgs(tempDir);
-    await runYtDlp([
-      ...cookieArgs,
-      "--skip-download",
-      "--no-playlist",
-      "--no-warnings",
-      "--write-subs",
-      "--write-auto-subs",
-      "--sub-langs", "en.*,en",
-      "--sub-format", "json3",
-      "--output", "%(id)s.%(ext)s",
-      "--paths", tempDir,
-      videoUrl
-    ]);
+    let subtitlePath = "";
 
-    const subtitlePath = await findFirstFile(
-      tempDir,
-      (name) => name.startsWith(`${videoId}.`) && name.endsWith(".json3")
-    );
+    for (const subtitleFormat of ["json3", "srv3", "vtt"]) {
+      try {
+        await runYtDlp([
+          ...cookieArgs,
+          "--skip-download",
+          "--no-playlist",
+          "--no-warnings",
+          "--write-subs",
+          "--write-auto-subs",
+          "--sub-langs", "en.*,en",
+          "--sub-format", subtitleFormat,
+          "--output", "%(id)s.%(ext)s",
+          "--paths", tempDir,
+          videoUrl
+        ]);
+
+        subtitlePath = await findFirstFile(
+          tempDir,
+          (name) => name.startsWith(`${videoId}.`) && (name.endsWith(".json3") || name.endsWith(".srv3") || name.endsWith(".vtt"))
+        );
+
+        if (subtitlePath) {
+          break;
+        }
+      } catch (_error) {
+        // Try the next subtitle format.
+      }
+    }
 
     if (!subtitlePath) {
       throw new Error("yt-dlp did not produce an English subtitle file.");
     }
 
     const raw = await fsp.readFile(subtitlePath, "utf8");
-    const subtitles = await translateCues(parseCaptionEvents(JSON.parse(raw)), language, "en", provider);
+    let parsedSubtitles = [];
+    if (subtitlePath.endsWith(".json3") || subtitlePath.endsWith(".srv3")) {
+      parsedSubtitles = parseCaptionEvents(JSON.parse(raw));
+    } else {
+      parsedSubtitles = parseTranscriptXml(raw);
+    }
+
+    const subtitles = await translateCues(parsedSubtitles, language, "en", provider);
     if (!subtitles.length) {
       throw new Error("yt-dlp subtitle file contained no cues.");
     }
@@ -845,7 +864,7 @@ async function downloadAudioWithYtDlp(videoId) {
       ...cookieArgs,
       "--no-playlist",
       "--no-warnings",
-      "-f", "bestaudio",
+      "-f", "bestaudio/best",
       "--output", "%(id)s.%(ext)s",
       "--paths", tempDir,
       videoUrl
