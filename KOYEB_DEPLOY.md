@@ -34,6 +34,7 @@ If Koyeb injects a different `PORT`, the server will use it automatically becaus
 - `CAPTION_WORKER_URL=...`
 - `YT_DLP_COOKIES=...`
 - `YT_DLP_COOKIES_BASE64=...`
+- `YT_DLP_COOKIES_PATH=/app/secrets/youtube-cookies.txt`
 
 You usually do not need to set `YT_DLP_BIN` on Koyeb if the Dockerfile is used as-is.
 
@@ -41,6 +42,14 @@ If Koyeb logs show `Sign in to confirm you're not a bot`, export your YouTube co
 
 - `YT_DLP_COOKIES`: raw cookie file contents
 - `YT_DLP_COOKIES_BASE64`: base64-encoded cookie file contents
+- `YT_DLP_COOKIES_PATH`: path to a mounted cookie file
+
+On Koyeb, the most reliable option is usually:
+
+1. Open the `Files` tab in environment settings.
+2. Upload `cookies.txt` there.
+3. Mount it at a path like `/app/secrets/youtube-cookies.txt`.
+4. Set `YT_DLP_COOKIES_PATH=/app/secrets/youtube-cookies.txt`.
 
 ## Expected Behavior
 

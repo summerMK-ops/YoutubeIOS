@@ -757,8 +757,13 @@ async function runYtDlp(args, options = {}) {
 }
 
 async function getYtDlpCookieArgs(tempDir) {
+  const cookiePathFromEnv = process.env.YT_DLP_COOKIES_PATH || process.env.YOUTUBE_COOKIES_PATH || "";
   const cookieText = process.env.YT_DLP_COOKIES || process.env.YOUTUBE_COOKIES || "";
   const cookieBase64 = process.env.YT_DLP_COOKIES_BASE64 || "";
+
+  if (cookiePathFromEnv) {
+    return ["--cookies", cookiePathFromEnv];
+  }
 
   let resolvedCookieText = cookieText;
   if (!resolvedCookieText && cookieBase64) {
