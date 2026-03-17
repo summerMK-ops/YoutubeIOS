@@ -788,6 +788,12 @@ async function getYtDlpCookieArgs(tempDir) {
   const cookieBase64 = process.env.YT_DLP_COOKIES_BASE64 || "";
 
   if (cookiePathFromEnv) {
+    try {
+      const stat = await fsp.stat(cookiePathFromEnv);
+      console.log(`[transcript] yt-dlp cookies path ready: ${cookiePathFromEnv} (${stat.size} bytes)`);
+    } catch (error) {
+      console.warn(`[transcript] yt-dlp cookies path unavailable: ${cookiePathFromEnv} (${String(error?.message || error)})`);
+    }
     return ["--cookies", cookiePathFromEnv];
   }
 
@@ -1501,6 +1507,9 @@ function getLanAddress() {
 server.listen(port, host, () => {
   const lanAddress = getLanAddress();
   console.log(`Server running at http://localhost:${port}`);
+  if (process.env.YT_DLP_COOKIES_PATH || process.env.YOUTUBE_COOKIES_PATH) {
+    console.log(`[transcript] configured yt-dlp cookies path: ${process.env.YT_DLP_COOKIES_PATH || process.env.YOUTUBE_COOKIES_PATH}`);
+  }
   if (host === "0.0.0.0" && lanAddress) {
     console.log(`Open on iPhone Safari: http://${lanAddress}:${port}`);
   }
