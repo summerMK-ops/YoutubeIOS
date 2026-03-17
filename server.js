@@ -864,7 +864,6 @@ async function downloadAudioWithYtDlp(videoId) {
       ...cookieArgs,
       "--no-playlist",
       "--no-warnings",
-      "-f", "bestaudio/best",
       "--output", "%(id)s.%(ext)s",
       "--paths", tempDir,
       videoUrl
