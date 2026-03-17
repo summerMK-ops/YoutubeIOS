@@ -756,6 +756,32 @@ async function runYtDlp(args, options = {}) {
   return runCommand(ytDlpBinary, args, options);
 }
 
+async function logYtDlpDiagnostics(videoId, cookieArgs) {
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+  for (const diagnosticArgs of [
+    ["--list-subs"],
+    ["--list-formats"]
+  ]) {
+    try {
+      const { stdout, stderr } = await runYtDlp([
+        ...cookieArgs,
+        "--no-playlist",
+        "--no-warnings",
+        "--extractor-args", "youtube:player_client=android,web",
+        ...diagnosticArgs,
+        videoUrl
+      ]);
+      const output = (stdout || stderr || "").trim();
+      if (output) {
+        console.warn(`[transcript] yt-dlp diagnostic ${diagnosticArgs[0]} for ${videoId}:\n${output}`);
+      }
+    } catch (error) {
+      console.warn(`[transcript] yt-dlp diagnostic ${diagnosticArgs[0]} failed for ${videoId}: ${String(error?.message || error)}`);
+    }
+  }
+}
+
 async function getYtDlpCookieArgs(tempDir) {
   const cookiePathFromEnv = process.env.YT_DLP_COOKIES_PATH || process.env.YOUTUBE_COOKIES_PATH || "";
   const cookieText = process.env.YT_DLP_COOKIES || process.env.YOUTUBE_COOKIES || "";
@@ -823,6 +849,9 @@ async function fetchTranscriptWithYtDlp(videoId, language, provider = "google") 
     }
 
     if (!subtitlePath) {
+      const files = await fsp.readdir(tempDir).catch(() => []);
+      console.warn(`[transcript] yt-dlp subtitle files for ${videoId}: ${files.join(", ") || "(none)"}`);
+      await logYtDlpDiagnostics(videoId, cookieArgs);
       throw new Error("yt-dlp did not produce an English subtitle file.");
     }
 
@@ -886,6 +915,7 @@ async function downloadAudioWithYtDlp(videoId) {
     }
 
     if (lastError) {
+      await logYtDlpDiagnostics(videoId, cookieArgs);
       throw lastError;
     }
 
