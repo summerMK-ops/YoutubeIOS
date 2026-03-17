@@ -799,6 +799,7 @@ async function fetchTranscriptWithYtDlp(videoId, language, provider = "google") 
           "--skip-download",
           "--no-playlist",
           "--no-warnings",
+          "--extractor-args", "youtube:player_client=android,web",
           "--write-subs",
           "--write-auto-subs",
           "--sub-langs", "en.*,en",
@@ -860,14 +861,33 @@ async function downloadAudioWithYtDlp(videoId) {
 
   return withTempDir(async (tempDir) => {
     const cookieArgs = await getYtDlpCookieArgs(tempDir);
-    await runYtDlp([
-      ...cookieArgs,
-      "--no-playlist",
-      "--no-warnings",
-      "--output", "%(id)s.%(ext)s",
-      "--paths", tempDir,
-      videoUrl
-    ]);
+    let lastError = null;
+
+    for (const audioArgs of [
+      ["--extractor-args", "youtube:player_client=android,web", "-f", "ba"],
+      ["--extractor-args", "youtube:player_client=android,web"],
+      []
+    ]) {
+      try {
+        await runYtDlp([
+          ...cookieArgs,
+          "--no-playlist",
+          "--no-warnings",
+          "--output", "%(id)s.%(ext)s",
+          "--paths", tempDir,
+          ...audioArgs,
+          videoUrl
+        ]);
+        lastError = null;
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
 
     const audioPath = await findFirstFile(
       tempDir,
