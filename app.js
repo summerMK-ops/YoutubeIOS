@@ -11,6 +11,7 @@ const DEFAULT_VIDEO_ID = "gLdgEYAxJ8A";
 const PLAYBACK_STORAGE_KEY = "trancy-playback-positions";
 const FAVORITES_STORAGE_KEY = "trancy-favorites";
 const SAVED_WORDS_STORAGE_KEY = "trancy-saved-words";
+const SAVED_LINES_STORAGE_KEY = "trancy-saved-lines";
 
 const state = {
   player: null,
@@ -35,6 +36,7 @@ const state = {
   lastSavedSecond: -1,
   favorites: [],
   savedWords: [],
+  savedLines: [],
   searchResults: [],
   recommendations: [],
   selectedVideoMeta: null,
@@ -70,6 +72,9 @@ const elements = {
   favoritesToggle: document.getElementById("favorites-toggle"),
   favoritesClose: document.getElementById("favorites-close"),
   favoritesPanel: document.getElementById("favorites-panel"),
+  savedLinesToggle: document.getElementById("saved-lines-toggle"),
+  savedLinesClose: document.getElementById("saved-lines-close"),
+  savedLinesPanel: document.getElementById("saved-lines-panel"),
   wordsToggle: document.getElementById("words-toggle"),
   wordsClose: document.getElementById("words-close"),
   wordsPanel: document.getElementById("words-panel"),
@@ -81,6 +86,8 @@ const elements = {
   currentCueTime: document.getElementById("current-cue-time"),
   currentOriginal: document.getElementById("current-original"),
   currentTranslation: document.getElementById("current-translation"),
+  copyCurrentEnglish: document.getElementById("copy-current-english"),
+  saveCurrentLine: document.getElementById("save-current-line"),
   currentTimeLabel: document.getElementById("current-time-label"),
   durationLabel: document.getElementById("duration-label"),
   seekSlider: document.getElementById("seek-slider"),
@@ -89,6 +96,7 @@ const elements = {
   recommendations: document.getElementById("recommendations"),
   recommendationStatus: document.getElementById("recommendation-status"),
   favoritesList: document.getElementById("favorites-list"),
+  savedLinesList: document.getElementById("saved-lines-list"),
   savedWordsList: document.getElementById("saved-words-list"),
   dictionaryBackdrop: document.getElementById("dictionary-backdrop"),
   dictionaryPopup: document.getElementById("dictionary-popup"),
@@ -188,6 +196,7 @@ function savePlaybackTime(videoId, time) {
 
 state.favorites = readFavorites();
 state.savedWords = readSavedWords();
+state.savedLines = readSavedLines();
 
 function readFavorites() {
   try {
@@ -223,6 +232,23 @@ function writeSavedWords(items) {
   }
 }
 
+function readSavedLines() {
+  try {
+    const raw = window.localStorage.getItem(SAVED_LINES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+function writeSavedLines(items) {
+  try {
+    window.localStorage.setItem(SAVED_LINES_STORAGE_KEY, JSON.stringify(items));
+  } catch (_error) {
+    // Ignore storage failures.
+  }
+}
+
 function isFavorite(videoId) {
   return state.favorites.some((item) => item.videoId === videoId);
 }
@@ -234,6 +260,55 @@ function normalizeWord(value) {
 function isWordSaved(word) {
   const normalized = normalizeWord(word);
   return state.savedWords.some((item) => normalizeWord(item.word) === normalized);
+}
+
+function buildLineId(cue, videoId = state.currentVideoId || "sample") {
+  return [videoId, cue.start, cue.end, cue.text].join("::");
+}
+
+function isLineSaved(cue) {
+  if (!cue?.text) {
+    return false;
+  }
+  const lineId = buildLineId(cue);
+  return state.savedLines.some((item) => item.id === lineId);
+}
+
+function getActiveCue() {
+  return state.activeIndex >= 0 ? state.subtitles[state.activeIndex] || null : null;
+}
+
+async function copyEnglishText(text, button) {
+  const normalizedText = String(text || "").trim();
+  if (!normalizedText) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(normalizedText);
+  } catch (_error) {
+    const textarea = document.createElement("textarea");
+    textarea.value = normalizedText;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+
+  if (!button) {
+    return;
+  }
+
+  const originalLabel = button.dataset.labelDefault || button.textContent || "Copy";
+  button.textContent = "Copied";
+  window.clearTimeout(Number(button.dataset.resetTimer || 0));
+  const timerId = window.setTimeout(() => {
+    button.textContent = originalLabel;
+  }, 1400);
+  button.dataset.resetTimer = String(timerId);
 }
 
 function updateSaveWordButton() {
@@ -345,6 +420,116 @@ function renderSavedWords() {
   });
 }
 
+function updateSaveCurrentLineButton() {
+  if (!elements.saveCurrentLine) {
+    return;
+  }
+
+  const cue = getActiveCue();
+  const saved = isLineSaved(cue);
+  elements.saveCurrentLine.classList.toggle("is-active", saved);
+  elements.saveCurrentLine.textContent = saved ? "Saved EN" : "Save EN";
+}
+
+function renderSavedLines() {
+  if (!elements.savedLinesList) {
+    return;
+  }
+
+  if (!state.savedLines.length) {
+    elements.savedLinesList.innerHTML = '<div class="saved-line-empty">Saved English lines will appear here.</div>';
+    updateSaveCurrentLineButton();
+    return;
+  }
+
+  elements.savedLinesList.innerHTML = state.savedLines.map((item) => `
+    <article class="saved-line-item" data-line-id="${escapeHtml(item.id)}" data-start="${escapeHtml(item.start)}">
+      <div class="saved-line-head">
+        <p class="saved-line-time">${escapeHtml(formatTime(item.start || 0))}</p>
+        <div class="saved-line-actions">
+          <button class="ghost saved-line-copy" type="button" data-copy-line-id="${escapeHtml(item.id)}">Copy</button>
+          <button class="ghost saved-line-remove" type="button" data-remove-line-id="${escapeHtml(item.id)}">Remove</button>
+        </div>
+      </div>
+      <p class="saved-line-text">${escapeHtml(item.text || "")}</p>
+      <p class="saved-line-translation">${escapeHtml(item.translation || "No translation available.")}</p>
+      <p class="saved-line-meta">${escapeHtml(item.videoTitle || "Current video")}</p>
+    </article>
+  `).join("");
+
+  elements.savedLinesList.querySelectorAll(".saved-line-item").forEach((node) => {
+    node.addEventListener("click", () => {
+      const savedItem = state.savedLines.find((item) => item.id === node.dataset.lineId);
+      if (!savedItem) {
+        return;
+      }
+      closeAllPopovers();
+      seekTo(Number(savedItem.start || 0), true);
+    });
+  });
+
+  elements.savedLinesList.querySelectorAll(".saved-line-copy").forEach((node) => {
+    node.dataset.labelDefault = "Copy";
+    node.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      const savedItem = state.savedLines.find((item) => item.id === node.dataset.copyLineId);
+      await copyEnglishText(savedItem?.text || "", node);
+    });
+  });
+
+  elements.savedLinesList.querySelectorAll(".saved-line-remove").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      event.stopPropagation();
+      removeSavedLine(node.dataset.removeLineId || "");
+    });
+  });
+
+  updateSaveCurrentLineButton();
+}
+
+function toggleSaveLine(cue = getActiveCue()) {
+  if (!cue?.text) {
+    return;
+  }
+
+  const lineId = buildLineId(cue);
+  if (isLineSaved(cue)) {
+    state.savedLines = state.savedLines.filter((item) => item.id !== lineId);
+  } else {
+    state.savedLines.unshift({
+      id: lineId,
+      videoId: state.currentVideoId || "",
+      videoTitle: state.selectedVideoMeta?.title || "",
+      start: cue.start,
+      end: cue.end,
+      text: cue.text,
+      translation: cue.translation || ""
+    });
+  }
+
+  state.savedLines = state.savedLines.slice(0, 100);
+  writeSavedLines(state.savedLines);
+  renderSavedLines();
+  const activeIndex = state.activeIndex;
+  renderTranscript();
+  state.activeIndex = -1;
+  updateActiveCue(activeIndex, false);
+}
+
+function removeSavedLine(lineId) {
+  if (!lineId) {
+    return;
+  }
+
+  state.savedLines = state.savedLines.filter((item) => item.id !== lineId);
+  writeSavedLines(state.savedLines);
+  renderSavedLines();
+  const activeIndex = state.activeIndex;
+  renderTranscript();
+  state.activeIndex = -1;
+  updateActiveCue(activeIndex, false);
+}
+
 function toggleFavoriteCurrentVideo() {
   if (!state.currentVideoId) {
     return;
@@ -383,6 +568,7 @@ function setPopoverOpen(name, open) {
   const groups = [
     ["settings", elements.settingsPanel, elements.settingsToggle],
     ["favorites", elements.favoritesPanel, elements.favoritesToggle],
+    ["saved-lines", elements.savedLinesPanel, elements.savedLinesToggle],
     ["words", elements.wordsPanel, elements.wordsToggle]
   ];
 
@@ -712,7 +898,13 @@ function renderTranscript() {
 
     return `
       <article class="${classes.join(" ")}" data-index="${index}">
-        <div class="cue-time">${formatTime(cue.start)} - ${formatTime(cue.end)}</div>
+        <div class="cue-head">
+          <div class="cue-time">${formatTime(cue.start)} - ${formatTime(cue.end)}</div>
+          <div class="cue-actions">
+            <button class="ghost cue-copy-button" type="button" data-copy-index="${index}">Copy</button>
+            <button class="ghost cue-save-button ${isLineSaved(cue) ? "is-active" : ""}" type="button" data-save-index="${index}">${isLineSaved(cue) ? "Saved" : "Save"}</button>
+          </div>
+        </div>
         <p class="cue-original">${renderWordMarkup(cue.text)}</p>
         <p class="cue-translation">${escapeHtml(cue.translation || "翻訳はありません")}</p>
       </article>
@@ -740,6 +932,23 @@ function renderTranscript() {
       const cueIndex = Number(cueNode?.dataset.index ?? -1);
       const context = cueIndex >= 0 ? state.subtitles[cueIndex]?.text || "" : "";
       await openDictionaryForWord(node.dataset.word || "", { context });
+    });
+  });
+
+  elements.transcriptList.querySelectorAll(".cue-copy-button").forEach((node) => {
+    node.dataset.labelDefault = "Copy";
+    node.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      const cue = state.subtitles[Number(node.dataset.copyIndex || -1)];
+      await copyEnglishText(cue?.text || "", node);
+    });
+  });
+
+  elements.transcriptList.querySelectorAll(".cue-save-button").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const cue = state.subtitles[Number(node.dataset.saveIndex || -1)];
+      toggleSaveLine(cue);
     });
   });
 }
@@ -1442,6 +1651,14 @@ elements.favoritesClose?.addEventListener("click", () => {
   setPopoverOpen("favorites", false);
 });
 
+elements.savedLinesToggle?.addEventListener("click", () => {
+  setPopoverOpen("saved-lines", state.activePopover !== "saved-lines");
+});
+
+elements.savedLinesClose?.addEventListener("click", () => {
+  setPopoverOpen("saved-lines", false);
+});
+
 elements.wordsToggle?.addEventListener("click", () => {
   setPopoverOpen("words", state.activePopover !== "words");
 });
@@ -1459,9 +1676,11 @@ document.addEventListener("click", (event) => {
   if (state.activePopover) {
     const clickedInsidePanel = elements.settingsPanel?.contains(target)
       || elements.favoritesPanel?.contains(target)
+      || elements.savedLinesPanel?.contains(target)
       || elements.wordsPanel?.contains(target);
     const clickedToggle = elements.settingsToggle?.contains(target)
       || elements.favoritesToggle?.contains(target)
+      || elements.savedLinesToggle?.contains(target)
       || elements.wordsToggle?.contains(target);
     if (!clickedInsidePanel && !clickedToggle) {
       closeAllPopovers();
@@ -1527,6 +1746,15 @@ elements.repeatCurrentGroup.addEventListener("click", () => {
 });
 elements.toggleFavorite.addEventListener("click", () => {
   toggleFavoriteCurrentVideo();
+});
+
+elements.copyCurrentEnglish?.addEventListener("click", async (event) => {
+  const cue = getActiveCue();
+  await copyEnglishText(cue?.text || "", event.currentTarget);
+});
+
+elements.saveCurrentLine?.addEventListener("click", () => {
+  toggleSaveLine();
 });
 
 elements.dictionaryClose?.addEventListener("click", () => {
@@ -1726,6 +1954,7 @@ function updateActiveCue(index, forceScroll = false) {
     elements.currentOriginal.textContent = "No subtitles yet.";
     elements.currentTranslation.textContent = "The current subtitle will appear here while the video plays.";
     updateRepeatButtons();
+    updateSaveCurrentLineButton();
     updateTransportUI();
     return;
   }
@@ -1734,6 +1963,7 @@ function updateActiveCue(index, forceScroll = false) {
   elements.currentOriginal.innerHTML = renderWordMarkup(cue.text);
   elements.currentTranslation.textContent = cue.translation || "No translation available.";
   bindWordLookup(elements.currentOriginal, cue.text);
+  updateSaveCurrentLineButton();
 
   const activeNode = elements.transcriptList.querySelector(`[data-index="${index}"]`);
   if (!activeNode) {
@@ -1829,8 +2059,10 @@ window.visualViewport?.addEventListener("resize", syncViewportHeight);
 window.visualViewport?.addEventListener("scroll", syncViewportHeight);
 closeAllPopovers();
 renderFavorites();
+renderSavedLines();
 renderSavedWords();
 updateSaveWordButton();
+updateSaveCurrentLineButton();
 updateRepeatButtons();
 elements.urlInput.value = `https://www.youtube.com/watch?v=${DEFAULT_VIDEO_ID}`;
 elements.searchQuery.value = "english vlog";

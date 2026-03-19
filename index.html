@@ -59,6 +59,14 @@
           <div id="favorites-list" class="favorites-list"></div>
         </div>
 
+        <div id="saved-lines-panel" class="side-popover hidden">
+          <div class="side-popover-header">
+            <h3>Saved Lines</h3>
+            <button id="saved-lines-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+          </div>
+          <div id="saved-lines-list" class="saved-lines-list"></div>
+        </div>
+
         <div id="settings-panel" class="side-popover hidden">
           <div class="side-popover-header">
             <h3>Settings</h3>
@@ -144,6 +152,11 @@
           <p id="current-translation" class="current-translation">Translation will appear here.</p>
         </div>
 
+        <div class="subtitle-utility-row">
+          <button id="copy-current-english" class="ghost utility-button" type="button">Copy EN</button>
+          <button id="save-current-line" class="ghost utility-button" type="button">Save EN</button>
+        </div>
+
         <div class="transport-progress">
           <div class="time-rail">
             <span id="current-time-label" class="time-label">00:00</span>
@@ -184,6 +197,7 @@
         <div class="transcript-actions compact-transcript-actions">
           <button id="words-toggle" class="ghost icon-button" type="button" aria-expanded="false" aria-controls="words-panel">Words</button>
           <button id="favorites-toggle" class="ghost icon-button" type="button" aria-expanded="false" aria-controls="favorites-panel">Fav</button>
+          <button id="saved-lines-toggle" class="ghost icon-button" type="button" aria-expanded="false" aria-controls="saved-lines-panel">Lines</button>
           <button id="settings-toggle" class="ghost icon-button" type="button" aria-expanded="false" aria-controls="settings-panel">Set</button>
         </div>
 
