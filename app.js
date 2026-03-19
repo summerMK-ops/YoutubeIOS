@@ -303,7 +303,7 @@ async function copyEnglishText(text, button) {
   }
 
   const originalLabel = button.dataset.labelDefault || button.textContent || "Copy";
-  button.textContent = "Copied";
+  button.textContent = button.dataset.feedbackLabel || "Copied";
   window.clearTimeout(Number(button.dataset.resetTimer || 0));
   const timerId = window.setTimeout(() => {
     button.textContent = originalLabel;
@@ -428,7 +428,8 @@ function updateSaveCurrentLineButton() {
   const cue = getActiveCue();
   const saved = isLineSaved(cue);
   elements.saveCurrentLine.classList.toggle("is-active", saved);
-  elements.saveCurrentLine.textContent = saved ? "Saved EN" : "Save EN";
+  elements.saveCurrentLine.innerHTML = `<span aria-hidden="true">${saved ? "★" : "☆"}</span>`;
+  elements.saveCurrentLine.setAttribute("aria-label", saved ? "Saved current English line" : "Save current English line");
 }
 
 function renderSavedLines() {
@@ -835,6 +836,15 @@ function repeatCue(index) {
     return;
   }
 
+  activateCueRepeat(index);
+}
+
+function activateCueRepeat(index) {
+  const cue = state.subtitles[index];
+  if (!cue) {
+    return;
+  }
+
   setRepeatMode({
     type: "cue",
     index,
@@ -863,6 +873,12 @@ function repeatGroupByCueIndex(index) {
     end: group.end
   });
   seekTo(group.start, true);
+}
+
+function syncRepeatToCueSelection(index) {
+  if (state.repeatMode) {
+    activateCueRepeat(index);
+  }
 }
 
 function applySubtitleData(subtitles, statusMessage) {
@@ -898,13 +914,7 @@ function renderTranscript() {
 
     return `
       <article class="${classes.join(" ")}" data-index="${index}">
-        <div class="cue-head">
-          <div class="cue-time">${formatTime(cue.start)} - ${formatTime(cue.end)}</div>
-          <div class="cue-actions">
-            <button class="ghost cue-copy-button" type="button" data-copy-index="${index}">Copy</button>
-            <button class="ghost cue-save-button ${isLineSaved(cue) ? "is-active" : ""}" type="button" data-save-index="${index}">${isLineSaved(cue) ? "Saved" : "Save"}</button>
-          </div>
-        </div>
+        <div class="cue-time">${formatTime(cue.start)} - ${formatTime(cue.end)}</div>
         <p class="cue-original">${renderWordMarkup(cue.text)}</p>
         <p class="cue-translation">${escapeHtml(cue.translation || "翻訳はありません")}</p>
       </article>
@@ -920,7 +930,10 @@ function renderTranscript() {
         return;
       }
 
-      seekTo(cue.start, true);
+      syncRepeatToCueSelection(index);
+      if (!state.repeatMode) {
+        seekTo(cue.start, true);
+      }
       updateActiveCue(index, true);
     });
   });
@@ -932,23 +945,6 @@ function renderTranscript() {
       const cueIndex = Number(cueNode?.dataset.index ?? -1);
       const context = cueIndex >= 0 ? state.subtitles[cueIndex]?.text || "" : "";
       await openDictionaryForWord(node.dataset.word || "", { context });
-    });
-  });
-
-  elements.transcriptList.querySelectorAll(".cue-copy-button").forEach((node) => {
-    node.dataset.labelDefault = "Copy";
-    node.addEventListener("click", async (event) => {
-      event.stopPropagation();
-      const cue = state.subtitles[Number(node.dataset.copyIndex || -1)];
-      await copyEnglishText(cue?.text || "", node);
-    });
-  });
-
-  elements.transcriptList.querySelectorAll(".cue-save-button").forEach((node) => {
-    node.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const cue = state.subtitles[Number(node.dataset.saveIndex || -1)];
-      toggleSaveLine(cue);
     });
   });
 }
@@ -1064,6 +1060,29 @@ function seekBy(deltaSeconds) {
   }
 
   seekTo(state.player.getCurrentTime() + deltaSeconds, false);
+}
+
+function jumpCue(delta) {
+  if (!state.subtitles.length) {
+    return;
+  }
+
+  const currentIndex = state.activeIndex >= 0
+    ? state.activeIndex
+    : findActiveCueIndex(state.playerReady && state.player?.getCurrentTime ? state.player.getCurrentTime() : 0);
+
+  const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+  const nextIndex = Math.max(0, Math.min(state.subtitles.length - 1, safeIndex + delta));
+  const cue = state.subtitles[nextIndex];
+  if (!cue) {
+    return;
+  }
+
+  syncRepeatToCueSelection(nextIndex);
+  if (!state.repeatMode) {
+    seekTo(cue.start, true);
+  }
+  updateActiveCue(nextIndex, true);
 }
 
 function persistCurrentPlaybackTime() {
@@ -1730,8 +1749,8 @@ elements.loadSample.addEventListener("click", () => {
 });
 
 elements.seekBack10.addEventListener("click", () => seekBy(-10));
-elements.seekBack5.addEventListener("click", () => seekBy(-5));
-elements.seekForward5.addEventListener("click", () => seekBy(5));
+elements.seekBack5.addEventListener("click", () => jumpCue(-1));
+elements.seekForward5.addEventListener("click", () => jumpCue(1));
 elements.seekForward10.addEventListener("click", () => seekBy(10));
 elements.togglePlayback.addEventListener("click", togglePlayback);
 elements.repeatCurrentCue.addEventListener("click", () => {

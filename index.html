@@ -148,13 +148,12 @@
       <section class="panel control-panel">
         <p id="current-cue-time" class="sr-only">00:00 - 00:00</p>
         <div class="current-subtitle-box current-copy-cache" aria-hidden="true">
+          <div class="current-subtitle-actions">
+            <button id="copy-current-english" class="ghost current-subtitle-action" type="button" aria-label="Copy current English line" data-label-default="⧉" data-feedback-label="✓">⧉</button>
+            <button id="save-current-line" class="ghost current-subtitle-action" type="button" aria-label="Save current English line">☆</button>
+          </div>
           <p id="current-original" class="current-line">No subtitles yet.</p>
           <p id="current-translation" class="current-translation">Translation will appear here.</p>
-        </div>
-
-        <div class="subtitle-utility-row">
-          <button id="copy-current-english" class="ghost utility-button" type="button">Copy EN</button>
-          <button id="save-current-line" class="ghost utility-button" type="button">Save EN</button>
         </div>
 
         <div class="transport-progress">
@@ -167,11 +166,11 @@
 
         <div class="player-controls transport-controls compact-controls">
           <button id="seek-back-10" class="ghost control-button transport-button" type="button" aria-label="Back 10 seconds">10&lt;</button>
-          <button id="seek-back-5" class="ghost control-button transport-button" type="button" aria-label="Back 5 seconds">5&lt;</button>
+          <button id="seek-back-5" class="ghost control-button transport-button" type="button" aria-label="Previous subtitle">&#8249;</button>
           <button id="toggle-playback" class="primary control-button primary-control transport-play" type="button" aria-label="Play">
             <span class="transport-play-icon" aria-hidden="true">&#9654;</span>
           </button>
-          <button id="seek-forward-5" class="ghost control-button transport-button" type="button" aria-label="Forward 5 seconds">5&gt;</button>
+          <button id="seek-forward-5" class="ghost control-button transport-button" type="button" aria-label="Next subtitle">&#8250;</button>
           <button id="seek-forward-10" class="ghost control-button transport-button" type="button" aria-label="Forward 10 seconds">10&gt;</button>
         </div>
 

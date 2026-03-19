@@ -361,23 +361,33 @@ select {
 }
 
 .current-subtitle-box {
+  position: relative;
   width: 100%;
   min-width: 0;
   max-width: none;
 }
 
-.subtitle-utility-row {
+.current-subtitle-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
-.utility-button {
-  min-height: 40px;
-  padding: 0 14px;
+.current-subtitle-action {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
   border-radius: 999px;
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .current-copy-cache {
@@ -434,6 +444,7 @@ select {
   color: #ffd348;
   font-size: 1.38rem;
   font-weight: 700;
+  padding-right: 84px;
 }
 
 .current-translation {
@@ -1023,28 +1034,6 @@ select {
   color: var(--accent);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-
-.cue-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.cue-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.cue-copy-button,
-.cue-save-button {
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 800;
 }
 
 .cue-original,
