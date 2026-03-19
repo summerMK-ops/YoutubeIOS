@@ -1269,7 +1269,7 @@ select {
   .transcript-list {
     margin-top: 0;
     min-height: 220px;
-    max-height: 280px;
+    max-height: 240px;
   }
 
   .cue {
@@ -1304,9 +1304,38 @@ select {
   }
 
   .control-panel {
-    gap: 10px;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    gap: 7px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .current-subtitle-box {
+    min-height: 0;
+  }
+
+  .current-subtitle-actions {
+    top: 0;
+    gap: 6px;
+  }
+
+  .current-subtitle-action {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    min-height: 28px;
+    font-size: 0.82rem;
+  }
+
+  .current-line {
+    padding-right: 64px;
+    font-size: 1.02rem;
+    line-height: 1.28;
+  }
+
+  .current-translation {
+    margin-top: 6px;
+    font-size: 0.86rem;
+    line-height: 1.28;
   }
 
   .transport-progress {
@@ -1318,49 +1347,54 @@ select {
   }
 
   .time-label {
-    font-size: 0.8rem;
+    font-size: 0.76rem;
   }
 
   .seek-slider {
-    height: 22px;
+    height: 18px;
   }
 
   .transport-controls {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
+    gap: 3px;
   }
 
   .transport-button,
   .transport-play {
-    min-height: 40px;
-    border-radius: 12px;
+    min-height: 36px;
+    border-radius: 10px;
   }
 
   .transport-play {
-    width: 50px;
-    height: 50px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
   }
 
+  .transport-play-icon {
+    font-size: 1.6rem;
+  }
+
   .compact-icon-button {
-    min-width: 34px;
-    min-height: 34px;
-    padding: 0 6px;
-    border-radius: 10px;
-    font-size: 0.72rem;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0 5px;
+    border-radius: 9px;
+    font-size: 0.66rem;
   }
 
   .compact-speed-control {
-    min-width: 72px;
+    min-width: 64px;
   }
 
   .compact-speed-control .speed-select {
-    min-width: 72px;
-    padding: 6px 8px;
+    min-width: 64px;
+    padding: 5px 6px;
+    font-size: 0.72rem;
   }
 
   .player-secondary-controls.compact-secondary-controls {
-    gap: 4px;
+    gap: 3px;
   }
 
   .compact-transcript-actions {
