@@ -914,7 +914,10 @@ function renderTranscript() {
 
     return `
       <article class="${classes.join(" ")}" data-index="${index}">
-        <div class="cue-time">${formatTime(cue.start)} - ${formatTime(cue.end)}</div>
+        <div class="cue-meta">
+          <div class="cue-time">${formatTime(cue.start)} - ${formatTime(cue.end)}</div>
+          <button class="ghost cue-copy-symbol" type="button" data-copy-index="${index}" aria-label="Copy highlighted English line" data-label-default="⧉" data-feedback-label="✓">⧉</button>
+        </div>
         <p class="cue-original">${renderWordMarkup(cue.text)}</p>
         <p class="cue-translation">${escapeHtml(cue.translation || "翻訳はありません")}</p>
       </article>
@@ -945,6 +948,14 @@ function renderTranscript() {
       const cueIndex = Number(cueNode?.dataset.index ?? -1);
       const context = cueIndex >= 0 ? state.subtitles[cueIndex]?.text || "" : "";
       await openDictionaryForWord(node.dataset.word || "", { context });
+    });
+  });
+
+  elements.transcriptList.querySelectorAll(".cue-copy-symbol").forEach((node) => {
+    node.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      const cue = state.subtitles[Number(node.dataset.copyIndex || -1)];
+      await copyEnglishText(cue?.text || "", node);
     });
   });
 }

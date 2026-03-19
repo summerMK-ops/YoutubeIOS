@@ -1036,6 +1036,31 @@ select {
   text-transform: uppercase;
 }
 
+.cue-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cue-copy-symbol {
+  display: none;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.cue.active .cue-copy-symbol {
+  display: inline-flex;
+}
+
 .cue-original,
 .cue-translation {
   margin: 10px 0 0;
@@ -1260,6 +1285,15 @@ select {
 
   .cue.active .cue-time {
     display: block;
+  }
+
+  .cue.active .cue-copy-symbol {
+    display: inline-flex;
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+    min-height: 24px;
+    font-size: 0.72rem;
   }
 
   .cue-original,
