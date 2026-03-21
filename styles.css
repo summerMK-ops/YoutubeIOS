@@ -858,11 +858,11 @@ select {
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 24px 60px rgba(35, 53, 57, 0.18);
-  z-index: 20;
+  background: rgba(11, 16, 24, 0.96);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+  z-index: 44;
 }
 
 .side-popover-header {
@@ -888,16 +888,16 @@ select {
   width: min(360px, calc(100vw - 32px));
   padding: 18px;
   border-radius: 24px;
-  background: #eef1f3;
-  border: 1px solid rgba(109, 123, 128, 0.28);
-  box-shadow: 0 24px 60px rgba(35, 53, 57, 0.28);
+  background: rgba(11, 16, 24, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
   z-index: 41;
 }
 
 .dictionary-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(97, 109, 116, 0.36);
+  background: rgba(4, 8, 14, 0.56);
   backdrop-filter: blur(8px);
   z-index: 40;
 }
@@ -931,7 +931,7 @@ select {
 
 .dictionary-body section,
 .dictionary-body .dictionary-definition {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 18px;
   padding: 12px 14px;
 }
@@ -985,7 +985,7 @@ select {
 }
 
 .dictionary-definition-ja {
-  color: #4e686b;
+  color: #93a6c7;
   font-weight: 700;
 }
 
@@ -1184,13 +1184,6 @@ select {
   .transcript-list {
     min-height: 420px;
     overflow: auto;
-  }
-
-  .side-popover {
-    position: static;
-    width: 100%;
-    max-height: none;
-    margin-top: 14px;
   }
 
   .transcript-head {
@@ -1474,6 +1467,19 @@ select {
   .list-section {
     padding: 10px;
     border-radius: 16px;
+  }
+
+  .side-popover {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: calc(var(--app-height) - 84px);
+    margin-top: 0;
+    border-radius: 18px;
+    padding: 14px;
+    z-index: 58;
   }
 
   .bottom-nav {
