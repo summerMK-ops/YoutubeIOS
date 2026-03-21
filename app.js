@@ -651,8 +651,8 @@ function applyFontSizeMode(mode) {
 
 function updateRepeatButtons() {
   const cueActive = state.repeatMode?.type === "cue" && state.repeatMode.index === state.activeIndex;
-  const groupActive = state.repeatMode?.type === "group"
-    && state.cueGroupMap[state.activeIndex] === state.repeatMode.index;
+  const groupActive = state.repeatMode?.type === "pair"
+    && state.repeatMode.index === state.activeIndex;
 
   elements.repeatCurrentCue.classList.toggle("is-active", Boolean(cueActive));
   elements.repeatCurrentGroup.classList.toggle("is-active", Boolean(groupActive));
@@ -2273,6 +2273,55 @@ function closeDictionaryPopup() {
     state.player.playVideo();
   }
   state.dictionaryResumePlayback = false;
+}
+
+function updateRepeatButtons() {
+  const cueActive = state.repeatMode?.type === "cue" && state.repeatMode.index === state.activeIndex;
+  const groupActive = state.repeatMode?.type === "pair" && state.repeatMode.index === state.activeIndex;
+
+  elements.repeatCurrentCue.classList.toggle("is-active", Boolean(cueActive));
+  elements.repeatCurrentGroup.classList.toggle("is-active", Boolean(groupActive));
+}
+
+function setRepeatMode(mode) {
+  state.repeatMode = mode;
+  if (!mode) {
+    setRepeatStatus("リピートはオフです。");
+    updateRepeatButtons();
+    return;
+  }
+
+  if (mode.type === "cue") {
+    setRepeatStatus(`字幕 ${mode.index + 1} をリピート中です。`);
+    updateRepeatButtons();
+    return;
+  }
+
+  setRepeatStatus(`字幕 ${mode.index + 1} と次の字幕をリピート中です。`);
+  updateRepeatButtons();
+}
+
+function repeatGroupByCueIndex(index) {
+  const cue = state.subtitles[index];
+  if (!cue) {
+    return;
+  }
+
+  const nextCue = state.subtitles[index + 1];
+  const loopEnd = nextCue?.end ?? cue.end;
+
+  if (state.repeatMode?.type === "pair" && state.repeatMode.index === index) {
+    clearRepeatMode();
+    return;
+  }
+
+  setRepeatMode({
+    type: "pair",
+    index,
+    start: cue.start,
+    end: loopEnd
+  });
+  seekTo(cue.start, true);
 }
 
 renderEmptyState(elements.searchResults, "検索結果はここに表示されます。");
