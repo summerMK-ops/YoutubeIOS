@@ -217,7 +217,7 @@ select {
 .seek-slider::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(90deg, rgba(57, 198, 201, 0.95), rgba(111, 235, 216, 0.92));
 }
 
 .seek-slider::-webkit-slider-thumb {
@@ -227,14 +227,14 @@ select {
   margin-top: -11px;
   border: 0;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(180deg, #8bf3e7 0%, #39c6c9 100%);
+  box-shadow: 0 8px 18px rgba(57, 198, 201, 0.28);
 }
 
 .seek-slider::-moz-range-track {
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(90deg, rgba(57, 198, 201, 0.95), rgba(111, 235, 216, 0.92));
 }
 
 .seek-slider::-moz-range-thumb {
@@ -242,8 +242,8 @@ select {
   height: 26px;
   border: 0;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(180deg, #8bf3e7 0%, #39c6c9 100%);
+  box-shadow: 0 8px 18px rgba(57, 198, 201, 0.28);
 }
 
 .player-secondary-controls {
@@ -319,8 +319,9 @@ select {
 }
 
 .transport-button {
-  background: rgba(20, 9, 31, 0.08);
-  border-color: rgba(20, 9, 31, 0.08);
+  background: linear-gradient(180deg, rgba(57, 198, 201, 0.2), rgba(57, 198, 201, 0.12));
+  border-color: rgba(57, 198, 201, 0.3);
+  color: #dffff9;
 }
 
 .transport-button-icon {
@@ -339,9 +340,9 @@ select {
   height: 88px;
   margin: 0 auto;
   border-radius: 50%;
-  background: linear-gradient(180deg, #efeaf4 0%, #d9d2e3 100%);
-  color: #17111d;
-  box-shadow: 0 20px 30px rgba(64, 40, 75, 0.18);
+  background: linear-gradient(180deg, #6ff0dc 0%, #39c6c9 100%);
+  color: #062226;
+  box-shadow: 0 20px 30px rgba(57, 198, 201, 0.24);
 }
 
 .transport-play-icon {
@@ -510,11 +511,11 @@ select {
 }
 
 .control-panel .seek-slider::-webkit-slider-runnable-track {
-  background: rgba(21, 40, 45, 0.14);
+  background: linear-gradient(90deg, rgba(57, 198, 201, 0.95), rgba(111, 235, 216, 0.92));
 }
 
 .control-panel .seek-slider::-moz-range-track {
-  background: rgba(21, 40, 45, 0.14);
+  background: linear-gradient(90deg, rgba(57, 198, 201, 0.95), rgba(111, 235, 216, 0.92));
 }
 
 .repeat-actions,
@@ -1248,9 +1249,9 @@ select {
   .player-panel > .player-wrap {
     order: 1;
     margin-top: 0;
-    width: calc(100% + 20px);
-    margin-left: -10px;
-    margin-right: -10px;
+    width: calc(100% + 8px);
+    margin-left: -4px;
+    margin-right: -4px;
     border-radius: 0;
   }
 
@@ -1288,6 +1289,7 @@ select {
     min-width: 0;
     max-width: none;
     border-radius: 0;
+    aspect-ratio: 16 / 9.8;
   }
 
   .transcript-panel {

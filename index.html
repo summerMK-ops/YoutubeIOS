@@ -59,6 +59,14 @@
           <div id="favorites-list" class="favorites-list"></div>
         </div>
 
+        <div id="history-panel" class="side-popover hidden">
+          <div class="side-popover-header">
+            <h3>History</h3>
+            <button id="history-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+          </div>
+          <div id="history-list" class="favorites-list"></div>
+        </div>
+
         <div id="saved-lines-panel" class="side-popover hidden">
           <div class="side-popover-header">
             <h3>Saved Lines</h3>
@@ -149,8 +157,8 @@
         <p id="current-cue-time" class="sr-only">00:00 - 00:00</p>
         <div class="current-subtitle-box current-copy-cache" aria-hidden="true">
           <div class="current-subtitle-actions">
-            <button id="copy-current-english" class="ghost current-subtitle-action" type="button" aria-label="Copy current English line" data-label-default="⧉" data-feedback-label="✓">⧉</button>
-            <button id="save-current-line" class="ghost current-subtitle-action" type="button" aria-label="Save current English line">☆</button>
+            <button id="copy-current-english" class="ghost current-subtitle-action" type="button" aria-label="Copy current English line" data-label-default="&#x29C9;" data-feedback-label="&#10003;">&#x29C9;</button>
+            <button id="save-current-line" class="ghost current-subtitle-action" type="button" aria-label="Save current English line">&#9734;</button>
           </div>
           <p id="current-original" class="current-line">No subtitles yet.</p>
           <p id="current-translation" class="current-translation">Translation will appear here.</p>
@@ -161,7 +169,7 @@
             <span id="current-time-label" class="time-label">00:00</span>
             <span id="duration-label" class="time-label">00:00</span>
           </div>
-          <input id="seek-slider" class="seek-slider" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek" />
+          <input id="seek-slider" class="seek-slider" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek">
         </div>
 
         <div class="player-controls transport-controls compact-controls">
@@ -203,7 +211,7 @@
         <label class="field compact-load-field">
           <span>YouTube URL or Video ID</span>
           <div class="inline-input">
-            <input id="youtube-url" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+            <input id="youtube-url" type="text" placeholder="https://www.youtube.com/watch?v=...">
             <button id="load-video" class="primary" type="button">Load</button>
           </div>
         </label>
@@ -218,7 +226,7 @@
         <label class="field">
           <span>Search Query</span>
           <div class="inline-input">
-            <input id="search-query" type="text" placeholder="english listening practice / TED / JavaScript tutorial" />
+            <input id="search-query" type="text" placeholder="english listening practice / TED / JavaScript tutorial">
             <button id="search-button" class="primary" type="button">Search</button>
           </div>
         </label>
@@ -250,7 +258,7 @@
             </div>
             <label class="field">
               <span>Subtitle File</span>
-              <input id="subtitle-file" type="file" accept=".vtt,.srt,.json" />
+              <input id="subtitle-file" type="file" accept=".vtt,.srt,.json">
             </label>
             <button id="load-sample" class="ghost" type="button">Sample</button>
           </div>
@@ -259,11 +267,11 @@
     </main>
 
     <nav class="bottom-nav" aria-label="Quick navigation">
-      <button id="nav-home" class="bottom-nav-button" type="button" aria-label="Home">⌂</button>
-      <button id="nav-search" class="bottom-nav-button" type="button" aria-label="Search">⌕</button>
-      <button id="nav-favorites" class="bottom-nav-button" type="button" aria-label="Favorites">♡</button>
-      <button id="nav-lines" class="bottom-nav-button" type="button" aria-label="Saved lines">✦</button>
-      <button id="nav-settings" class="bottom-nav-button" type="button" aria-label="Settings">⚙</button>
+      <button id="nav-home" class="bottom-nav-button" type="button" aria-label="Home">&#8962;</button>
+      <button id="nav-history" class="bottom-nav-button" type="button" aria-label="History">&#8635;</button>
+      <button id="nav-favorites" class="bottom-nav-button" type="button" aria-label="Favorites">&#9825;</button>
+      <button id="nav-lines" class="bottom-nav-button" type="button" aria-label="Saved lines">&#10022;</button>
+      <button id="nav-settings" class="bottom-nav-button" type="button" aria-label="Settings">&#9881;</button>
     </nav>
   </div>
 

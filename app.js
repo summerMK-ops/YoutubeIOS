@@ -12,6 +12,8 @@ const PLAYBACK_STORAGE_KEY = "trancy-playback-positions";
 const FAVORITES_STORAGE_KEY = "trancy-favorites";
 const SAVED_WORDS_STORAGE_KEY = "trancy-saved-words";
 const SAVED_LINES_STORAGE_KEY = "trancy-saved-lines";
+const HISTORY_STORAGE_KEY = "trancy-history";
+const LAST_VIDEO_STORAGE_KEY = "trancy-last-video";
 
 const state = {
   player: null,
@@ -37,6 +39,7 @@ const state = {
   favorites: [],
   savedWords: [],
   savedLines: [],
+  history: [],
   searchResults: [],
   recommendations: [],
   selectedVideoMeta: null,
@@ -72,6 +75,8 @@ const elements = {
   favoritesToggle: document.getElementById("favorites-toggle"),
   favoritesClose: document.getElementById("favorites-close"),
   favoritesPanel: document.getElementById("favorites-panel"),
+  historyClose: document.getElementById("history-close"),
+  historyPanel: document.getElementById("history-panel"),
   savedLinesToggle: document.getElementById("saved-lines-toggle"),
   savedLinesClose: document.getElementById("saved-lines-close"),
   savedLinesPanel: document.getElementById("saved-lines-panel"),
@@ -96,10 +101,11 @@ const elements = {
   recommendations: document.getElementById("recommendations"),
   recommendationStatus: document.getElementById("recommendation-status"),
   favoritesList: document.getElementById("favorites-list"),
+  historyList: document.getElementById("history-list"),
   savedLinesList: document.getElementById("saved-lines-list"),
   savedWordsList: document.getElementById("saved-words-list"),
   navHome: document.getElementById("nav-home"),
-  navSearch: document.getElementById("nav-search"),
+  navHistory: document.getElementById("nav-history"),
   navFavorites: document.getElementById("nav-favorites"),
   navLines: document.getElementById("nav-lines"),
   navSettings: document.getElementById("nav-settings"),
@@ -202,6 +208,7 @@ function savePlaybackTime(videoId, time) {
 state.favorites = readFavorites();
 state.savedWords = readSavedWords();
 state.savedLines = readSavedLines();
+state.history = readHistory();
 
 function readFavorites() {
   try {
@@ -249,6 +256,40 @@ function readSavedLines() {
 function writeSavedLines(items) {
   try {
     window.localStorage.setItem(SAVED_LINES_STORAGE_KEY, JSON.stringify(items));
+  } catch (_error) {
+    // Ignore storage failures.
+  }
+}
+
+function readHistory() {
+  try {
+    const raw = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+function writeHistory(items) {
+  try {
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(items));
+  } catch (_error) {
+    // Ignore storage failures.
+  }
+}
+
+function readLastVideoMeta() {
+  try {
+    const raw = window.localStorage.getItem(LAST_VIDEO_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function writeLastVideoMeta(item) {
+  try {
+    window.localStorage.setItem(LAST_VIDEO_STORAGE_KEY, JSON.stringify(item));
   } catch (_error) {
     // Ignore storage failures.
   }
@@ -574,6 +615,7 @@ function setPopoverOpen(name, open) {
   const groups = [
     ["settings", elements.settingsPanel, elements.settingsToggle],
     ["favorites", elements.favoritesPanel, elements.favoritesToggle],
+    ["history", elements.historyPanel, elements.navHistory],
     ["saved-lines", elements.savedLinesPanel, elements.savedLinesToggle],
     ["words", elements.wordsPanel, elements.wordsToggle]
   ];
@@ -674,6 +716,28 @@ function updateNowPlaying(meta = null) {
     .filter(Boolean)
     .join(" / ");
   updateFavoriteButton();
+}
+
+function getInitialVideoMeta() {
+  const lastVideo = readLastVideoMeta();
+  if (lastVideo?.videoId) {
+    return lastVideo;
+  }
+
+  const firstHistory = state.history[0];
+  if (firstHistory?.videoId) {
+    return firstHistory;
+  }
+
+  return {
+    videoId: DEFAULT_VIDEO_ID,
+    title: "YouTube動画",
+    channelName: "",
+    lengthText: "",
+    viewCountText: "",
+    publishedTimeText: "",
+    thumbnail: `https://i.ytimg.com/vi/${DEFAULT_VIDEO_ID}/hqdefault.jpg`
+  };
 }
 
 function normalizeSubtitleEntry(entry, index) {
@@ -969,6 +1033,87 @@ function renderTranscript() {
   });
 }
 
+function renderHistory() {
+  if (!elements.historyList) {
+    return;
+  }
+
+  if (!state.history.length) {
+    elements.historyList.innerHTML = '<div class="favorite-empty">視聴履歴がここに並びます。</div>';
+    return;
+  }
+
+  elements.historyList.innerHTML = state.history.map((item) => `
+    <article class="favorite-item ${item.videoId === state.currentVideoId ? "is-active" : ""}" data-video-id="${escapeHtml(item.videoId)}">
+      <img class="favorite-thumb" src="${escapeHtml(item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`)}" alt="${escapeHtml(item.title || "動画")}" />
+      <div class="favorite-copy">
+        <div class="favorite-head">
+          <p class="favorite-title">${escapeHtml(item.title || "動画")}</p>
+          <button class="ghost favorite-remove" type="button" data-remove-history-id="${escapeHtml(item.videoId)}">解除</button>
+        </div>
+        <p class="favorite-meta">${escapeHtml([item.channelName || "", item.resumeTime ? `${formatTime(item.resumeTime)} から再開` : ""].filter(Boolean).join(" / "))}</p>
+      </div>
+    </article>
+  `).join("");
+
+  elements.historyList.querySelectorAll(".favorite-item").forEach((node) => {
+    node.addEventListener("click", () => {
+      const historyItem = state.history.find((item) => item.videoId === node.dataset.videoId);
+      if (historyItem) {
+        closeAllPopovers();
+        handleVideoSelection(historyItem).catch(() => {});
+      }
+    });
+  });
+
+  elements.historyList.querySelectorAll("[data-remove-history-id]").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      event.stopPropagation();
+      removeHistoryItem(node.dataset.removeHistoryId || "");
+    });
+  });
+}
+
+function saveHistoryItem(item) {
+  if (!item?.videoId) {
+    return;
+  }
+
+  const resumeTime = getSavedPlaybackTime(item.videoId);
+  const nextItem = {
+    videoId: item.videoId,
+    title: item.title || "YouTube動画",
+    channelName: item.channelName || "",
+    thumbnail: item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
+    url: item.url || `https://www.youtube.com/watch?v=${item.videoId}`,
+    lengthText: item.lengthText || "",
+    viewCountText: item.viewCountText || "",
+    publishedTimeText: item.publishedTimeText || "",
+    resumeTime
+  };
+
+  state.history = [
+    nextItem,
+    ...state.history.filter((historyItem) => historyItem.videoId !== item.videoId)
+  ].slice(0, 50);
+  writeHistory(state.history);
+  writeLastVideoMeta(nextItem);
+  renderHistory();
+}
+
+function removeHistoryItem(videoId) {
+  if (!videoId) {
+    return;
+  }
+
+  state.history = state.history.filter((item) => item.videoId !== videoId);
+  writeHistory(state.history);
+  if (readLastVideoMeta()?.videoId === videoId) {
+    writeLastVideoMeta(state.history[0] || null);
+  }
+  renderHistory();
+}
+
 function renderWordMarkup(text) {
   return String(text || "")
     .split(/(\s+)/)
@@ -1118,6 +1263,24 @@ function persistCurrentPlaybackTime() {
 
   state.lastSavedSecond = rounded;
   savePlaybackTime(state.currentVideoId, time);
+  let didUpdate = false;
+  state.history = state.history.map((item) => {
+    if (item.videoId !== state.currentVideoId) {
+      return item;
+    }
+    didUpdate = true;
+    return {
+      ...item,
+      resumeTime: rounded
+    };
+  });
+  if (didUpdate) {
+    writeHistory(state.history);
+    if (state.history[0]?.videoId === state.currentVideoId) {
+      writeLastVideoMeta(state.history[0]);
+    }
+    renderHistory();
+  }
 }
 
 function togglePlayback() {
@@ -1499,6 +1662,10 @@ async function handleVideoSelection(item) {
   elements.urlInput.value = `https://www.youtube.com/watch?v=${videoId}`;
   updateNowPlaying(item);
   renderFavorites();
+  saveHistoryItem({
+    ...item,
+    videoId
+  });
   state.subtitles = [];
   state.cueGroups = [];
   state.cueGroupMap = [];
@@ -1562,16 +1729,9 @@ async function loadVideoFromInput() {
 }
 
 window.onYouTubeIframeAPIReady = () => {
-  handleVideoSelection({
-    videoId: DEFAULT_VIDEO_ID,
-    title: "YouTube動画",
-    channelName: "",
-    lengthText: "",
-    viewCountText: "",
-    publishedTimeText: "",
-    thumbnail: `https://i.ytimg.com/vi/${DEFAULT_VIDEO_ID}/hqdefault.jpg`
-  }).catch(() => {
-    createPlayer(DEFAULT_VIDEO_ID);
+  const initialVideo = getInitialVideoMeta();
+  handleVideoSelection(initialVideo).catch(() => {
+    createPlayer(initialVideo.videoId || DEFAULT_VIDEO_ID);
   });
 };
 
@@ -1692,11 +1852,15 @@ elements.favoritesClose?.addEventListener("click", () => {
   setPopoverOpen("favorites", false);
 });
 
+elements.historyClose?.addEventListener("click", () => {
+  setPopoverOpen("history", false);
+});
+
 elements.savedLinesToggle?.addEventListener("click", () => {
   setPopoverOpen("saved-lines", state.activePopover !== "saved-lines");
 });
 
-  elements.savedLinesClose?.addEventListener("click", () => {
+elements.savedLinesClose?.addEventListener("click", () => {
   setPopoverOpen("saved-lines", false);
 });
 
@@ -1717,10 +1881,12 @@ document.addEventListener("click", (event) => {
   if (state.activePopover) {
     const clickedInsidePanel = elements.settingsPanel?.contains(target)
       || elements.favoritesPanel?.contains(target)
+      || elements.historyPanel?.contains(target)
       || elements.savedLinesPanel?.contains(target)
       || elements.wordsPanel?.contains(target);
     const clickedToggle = elements.settingsToggle?.contains(target)
       || elements.favoritesToggle?.contains(target)
+      || elements.navHistory?.contains(target)
       || elements.savedLinesToggle?.contains(target)
       || elements.wordsToggle?.contains(target)
       || elements.navFavorites?.contains(target)
@@ -1797,10 +1963,8 @@ elements.navHome?.addEventListener("click", () => {
   scrollWorkspaceToTop();
 });
 
-elements.navSearch?.addEventListener("click", () => {
-  closeAllPopovers();
-  elements.searchQuery?.focus();
-  elements.searchQuery?.scrollIntoView({ behavior: "smooth", block: "center" });
+elements.navHistory?.addEventListener("click", () => {
+  setPopoverOpen("history", state.activePopover !== "history");
 });
 
 elements.navFavorites?.addEventListener("click", () => {
@@ -2126,12 +2290,13 @@ window.visualViewport?.addEventListener("resize", syncViewportHeight);
 window.visualViewport?.addEventListener("scroll", syncViewportHeight);
 closeAllPopovers();
 renderFavorites();
+renderHistory();
 renderSavedLines();
 renderSavedWords();
 updateSaveWordButton();
 updateSaveCurrentLineButton();
 updateRepeatButtons();
-elements.urlInput.value = `https://www.youtube.com/watch?v=${DEFAULT_VIDEO_ID}`;
+elements.urlInput.value = `https://www.youtube.com/watch?v=${getInitialVideoMeta().videoId || DEFAULT_VIDEO_ID}`;
 elements.searchQuery.value = "english vlog";
 loadSearch(elements.searchQuery.value).catch(() => {
   elements.searchStatus.textContent = "初期検索を取得できませんでした。";
