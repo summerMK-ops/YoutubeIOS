@@ -1887,7 +1887,7 @@ elements.fontSizeMode.addEventListener("change", (event) => {
   applyFontSizeMode(event.target.value);
 });
 
-elements.settingsToggle.addEventListener("click", () => {
+elements.settingsToggle?.addEventListener("click", () => {
   setPopoverOpen("settings", state.activePopover !== "settings");
 });
 
