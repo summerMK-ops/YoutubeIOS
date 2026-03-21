@@ -326,9 +326,82 @@ async function translateTextWithDeepL(text, targetLanguage, sourceLanguage = "")
   return normalizeCueText(payload?.translations?.[0]?.text || "");
 }
 
+async function translateBatchWithOpenAI(cues, targetLanguage, sourceLanguage = "") {
+  const apiKey = process.env.OPENAI_API_KEY || "";
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured");
+  }
+
+  const model = process.env.OPENAI_TRANSLATION_MODEL || "gpt-4.1-mini";
+  const languageName = String(targetLanguage || "ja");
+  const sourceName = sourceLanguage || "English";
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      response_format: {
+        type: "json_object"
+      },
+      messages: [
+        {
+          role: "system",
+          content: "You are a subtitle translator. Return only valid JSON with a translations array. Preserve line order. Keep translations natural, concise, and suitable for subtitle display."
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            task: "Translate subtitle lines",
+            source_language: sourceName,
+            target_language: languageName,
+            lines: cues.map((cue) => cue.text)
+          })
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI translation failed: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const content = payload?.choices?.[0]?.message?.content || "{}";
+  const parsed = JSON.parse(content);
+  const translations = Array.isArray(parsed?.translations) ? parsed.translations : [];
+
+  return cues.map((cue, index) => ({
+    ...cue,
+    translation: normalizeCueText(translations[index] || cue.translation || "")
+  }));
+}
+
 async function translateCues(cues, targetLanguage, sourceLanguage = "", provider = "google") {
   if (!targetLanguage || targetLanguage === sourceLanguage) {
     return cues;
+  }
+
+  if (provider === "openai") {
+    const batchSize = 20;
+    const translated = [];
+    for (let index = 0; index < cues.length; index += batchSize) {
+      const batch = cues.slice(index, index + batchSize);
+      try {
+        const result = await translateBatchWithOpenAI(batch, targetLanguage, sourceLanguage);
+        translated.push(...result);
+      } catch (_error) {
+        translated.push(...batch.map((cue) => ({
+          ...cue,
+          translation: cue.translation || ""
+        })));
+      }
+    }
+    return translated;
   }
 
   const concurrency = provider === "deepl" ? 4 : 8;
