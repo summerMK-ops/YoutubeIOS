@@ -228,20 +228,20 @@
         </div>
 
         <div class="search-grid search-grid-wide">
-          <div>
+          <section class="list-section results-section">
             <div class="section-title transcript-title-block">
               <h2 class="subhead">Results</h2>
             </div>
             <div id="search-results" class="video-list"></div>
-          </div>
+          </section>
 
-          <div>
+          <section class="list-section recommendations-section">
             <div class="section-title transcript-title-block">
               <h2 class="subhead">Recommendations</h2>
               <p id="recommendation-status" class="panel-status">Recommendations will appear here.</p>
             </div>
             <div id="recommendations" class="video-list compact"></div>
-          </div>
+          </section>
 
           <div class="sample-box">
             <div>
@@ -257,6 +257,14 @@
         </div>
       </section>
     </main>
+
+    <nav class="bottom-nav" aria-label="Quick navigation">
+      <button id="nav-home" class="bottom-nav-button" type="button" aria-label="Home">⌂</button>
+      <button id="nav-search" class="bottom-nav-button" type="button" aria-label="Search">⌕</button>
+      <button id="nav-favorites" class="bottom-nav-button" type="button" aria-label="Favorites">♡</button>
+      <button id="nav-lines" class="bottom-nav-button" type="button" aria-label="Saved lines">✦</button>
+      <button id="nav-settings" class="bottom-nav-button" type="button" aria-label="Settings">⚙</button>
+    </nav>
   </div>
 
   <script src="https://www.youtube.com/iframe_api"></script>

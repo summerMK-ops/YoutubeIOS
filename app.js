@@ -98,6 +98,11 @@ const elements = {
   favoritesList: document.getElementById("favorites-list"),
   savedLinesList: document.getElementById("saved-lines-list"),
   savedWordsList: document.getElementById("saved-words-list"),
+  navHome: document.getElementById("nav-home"),
+  navSearch: document.getElementById("nav-search"),
+  navFavorites: document.getElementById("nav-favorites"),
+  navLines: document.getElementById("nav-lines"),
+  navSettings: document.getElementById("nav-settings"),
   dictionaryBackdrop: document.getElementById("dictionary-backdrop"),
   dictionaryPopup: document.getElementById("dictionary-popup"),
   dictionaryClose: document.getElementById("dictionary-close"),
@@ -588,6 +593,10 @@ function closeAllPopovers() {
   setPopoverOpen(state.activePopover, false);
 }
 
+function scrollWorkspaceToTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 function applyFontSizeMode(mode) {
   const normalizedMode = ["tiny", "small", "medium", "large"].includes(mode) ? mode : "medium";
   state.fontSizeMode = normalizedMode;
@@ -1034,7 +1043,7 @@ function updateActiveCue(index, forceScroll = false) {
   updateRepeatButtons();
 
   if (state.autoScroll || forceScroll) {
-    const anchorIndex = Math.max(index - 2, 0);
+    const anchorIndex = Math.max(index - 1, 0);
     const anchorNode = elements.transcriptList.querySelector(`[data-index="${anchorIndex}"]`) || activeNode;
     const listRect = elements.transcriptList.getBoundingClientRect();
     const anchorRect = anchorNode.getBoundingClientRect();
@@ -1483,6 +1492,8 @@ async function handleVideoSelection(item) {
   state.lastSavedSecond = -1;
   state.transcriptRequestId += 1;
   closeDictionaryPopup();
+  closeAllPopovers();
+  scrollWorkspaceToTop();
   const resumeTime = getSavedPlaybackTime(videoId);
   state.pendingResumeTime = resumeTime;
   elements.urlInput.value = `https://www.youtube.com/watch?v=${videoId}`;
@@ -1685,7 +1696,7 @@ elements.savedLinesToggle?.addEventListener("click", () => {
   setPopoverOpen("saved-lines", state.activePopover !== "saved-lines");
 });
 
-elements.savedLinesClose?.addEventListener("click", () => {
+  elements.savedLinesClose?.addEventListener("click", () => {
   setPopoverOpen("saved-lines", false);
 });
 
@@ -1711,7 +1722,10 @@ document.addEventListener("click", (event) => {
     const clickedToggle = elements.settingsToggle?.contains(target)
       || elements.favoritesToggle?.contains(target)
       || elements.savedLinesToggle?.contains(target)
-      || elements.wordsToggle?.contains(target);
+      || elements.wordsToggle?.contains(target)
+      || elements.navFavorites?.contains(target)
+      || elements.navLines?.contains(target)
+      || elements.navSettings?.contains(target);
     if (!clickedInsidePanel && !clickedToggle) {
       closeAllPopovers();
     }
@@ -1776,6 +1790,29 @@ elements.repeatCurrentGroup.addEventListener("click", () => {
 });
 elements.toggleFavorite.addEventListener("click", () => {
   toggleFavoriteCurrentVideo();
+});
+
+elements.navHome?.addEventListener("click", () => {
+  closeAllPopovers();
+  scrollWorkspaceToTop();
+});
+
+elements.navSearch?.addEventListener("click", () => {
+  closeAllPopovers();
+  elements.searchQuery?.focus();
+  elements.searchQuery?.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
+elements.navFavorites?.addEventListener("click", () => {
+  setPopoverOpen("favorites", state.activePopover !== "favorites");
+});
+
+elements.navLines?.addEventListener("click", () => {
+  setPopoverOpen("saved-lines", state.activePopover !== "saved-lines");
+});
+
+elements.navSettings?.addEventListener("click", () => {
+  setPopoverOpen("settings", state.activePopover !== "settings");
 });
 
 elements.copyCurrentEnglish?.addEventListener("click", async (event) => {
@@ -1855,7 +1892,7 @@ function updateActiveCue(index, forceScroll = false) {
   updateTransportUI();
 
   if (state.autoScroll || forceScroll) {
-    const anchorIndex = Math.max(index - 2, 0);
+    const anchorIndex = Math.max(index - 1, 0);
     const anchorNode = elements.transcriptList.querySelector(`[data-index="${anchorIndex}"]`) || activeNode;
     const listRect = elements.transcriptList.getBoundingClientRect();
     const anchorRect = anchorNode.getBoundingClientRect();
@@ -2007,7 +2044,7 @@ function updateActiveCue(index, forceScroll = false) {
   updateTransportUI();
 
   if (state.autoScroll || forceScroll) {
-    const anchorIndex = Math.max(index - 2, 0);
+    const anchorIndex = Math.max(index - 1, 0);
     const anchorNode = elements.transcriptList.querySelector(`[data-index="${anchorIndex}"]`) || activeNode;
     const listRect = elements.transcriptList.getBoundingClientRect();
     const anchorRect = anchorNode.getBoundingClientRect();
