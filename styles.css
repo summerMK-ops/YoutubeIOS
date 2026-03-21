@@ -1474,11 +1474,15 @@ select {
     top: 8px;
     left: 8px;
     right: 8px;
+    bottom: calc(env(safe-area-inset-bottom, 0) + 62px);
     width: auto;
-    max-height: calc(var(--app-height) - 84px);
+    max-height: none;
+    height: auto;
     margin-top: 0;
     border-radius: 18px;
     padding: 14px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
     z-index: 58;
   }
 
