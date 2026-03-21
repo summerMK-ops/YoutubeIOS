@@ -865,7 +865,7 @@ select {
     radial-gradient(circle at top, rgba(57, 198, 201, 0.12), transparent 28%),
     rgba(3, 7, 13, 0.72);
   backdrop-filter: blur(10px);
-  z-index: 54;
+  z-index: 70;
   opacity: 0;
   transition: opacity 180ms ease;
 }
@@ -877,11 +877,11 @@ select {
 .side-popover {
   position: fixed;
   left: 50%;
-  bottom: 18px;
-  top: auto;
+  top: max(10px, env(safe-area-inset-top, 0));
+  bottom: max(10px, env(safe-area-inset-bottom, 0));
   transform: translate(-50%, 32px);
-  width: min(560px, calc(100vw - 28px));
-  max-height: min(72vh, 760px);
+  width: min(960px, calc(100vw - 20px));
+  max-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 20px);
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   padding: 18px 18px 20px;
@@ -893,7 +893,7 @@ select {
   box-shadow:
     0 34px 80px rgba(0, 0, 0, 0.52),
     0 0 0 1px rgba(255, 255, 255, 0.03) inset;
-  z-index: 55;
+  z-index: 71;
   opacity: 0;
   transition: transform 220ms ease, opacity 180ms ease;
 }
@@ -1533,20 +1533,20 @@ select {
 
   .side-popover {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0) + 10px);
-    left: 12px;
-    right: 12px;
-    bottom: calc(env(safe-area-inset-bottom, 0) + 66px);
+    top: calc(env(safe-area-inset-top, 0) + 6px);
+    left: 6px;
+    right: 6px;
+    bottom: calc(env(safe-area-inset-bottom, 0) + 6px);
     transform: translateY(34px);
     width: auto;
-    max-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 86px);
+    max-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 12px);
     height: auto;
     margin-top: 0;
-    border-radius: 20px;
+    border-radius: 22px;
     padding: 14px 14px 16px;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
-    z-index: 58;
+    z-index: 72;
   }
 
   .side-popover.is-open {
@@ -1554,7 +1554,7 @@ select {
   }
 
   .panel-backdrop {
-    z-index: 57;
+    z-index: 71;
   }
 
   .side-popover-header {
