@@ -1,6 +1,6 @@
 {
-  "name": "EnglishIOS",
-  "short_name": "EnglishIOS",
+  "name": "YoutubeIOShome",
+  "short_name": "YoutubeIOShome",
   "description": "YouTube subtitle learning player for iPhone Safari",
   "start_url": "/",
   "scope": "/",
