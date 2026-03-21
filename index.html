@@ -42,118 +42,6 @@
       <aside class="panel transcript-panel">
         <p id="subtitle-status" class="subtitle-status sr-only">Subtitle status</p>
         <div id="transcript-list" class="transcript-list"></div>
-
-        <div id="panel-backdrop" class="panel-backdrop hidden"></div>
-
-        <div id="words-panel" class="side-popover hidden">
-          <div class="side-popover-header">
-            <h3>Saved Words</h3>
-            <button id="words-close" class="ghost icon-button icon-button-small" type="button">Close</button>
-          </div>
-          <div id="saved-words-list" class="saved-words-list"></div>
-        </div>
-
-        <div id="favorites-panel" class="side-popover hidden">
-          <div class="side-popover-header">
-            <h3>Favorites</h3>
-            <button id="favorites-close" class="ghost icon-button icon-button-small" type="button">Close</button>
-          </div>
-          <div id="favorites-list" class="favorites-list"></div>
-        </div>
-
-        <div id="history-panel" class="side-popover hidden">
-          <div class="side-popover-header">
-            <h3>History</h3>
-            <button id="history-close" class="ghost icon-button icon-button-small" type="button">Close</button>
-          </div>
-          <div id="history-list" class="favorites-list"></div>
-        </div>
-
-        <div id="saved-lines-panel" class="side-popover hidden">
-          <div class="side-popover-header">
-            <h3>Saved Lines</h3>
-            <button id="saved-lines-close" class="ghost icon-button icon-button-small" type="button">Close</button>
-          </div>
-          <div id="saved-lines-list" class="saved-lines-list"></div>
-        </div>
-
-        <div id="settings-panel" class="side-popover hidden">
-          <div class="side-popover-header">
-            <h3>Settings</h3>
-            <button id="settings-close" class="ghost icon-button icon-button-small" type="button">Close</button>
-          </div>
-
-          <div class="field-grid transcript-controls">
-            <label class="field">
-              <span>Subtitle Track</span>
-              <select id="subtitle-track"></select>
-            </label>
-
-            <label class="field">
-              <span>Display Mode</span>
-              <select id="display-mode">
-                <option value="both">Original + Translation</option>
-                <option value="original">Original only</option>
-                <option value="translation">Translation only</option>
-              </select>
-            </label>
-
-            <label class="field">
-              <span>Translation Language</span>
-              <select id="translation-language">
-                <option value="ja" selected>Japanese</option>
-                <option value="en">English</option>
-                <option value="ko">Korean</option>
-                <option value="zh-CN">Chinese</option>
-              </select>
-            </label>
-
-            <label class="field">
-              <span>Provider</span>
-              <select id="translation-provider">
-                <option value="google" selected>Google</option>
-                <option value="deepl">DeepL</option>
-                <option value="openai">GPT-4.1 mini</option>
-              </select>
-            </label>
-
-            <label class="field">
-              <span>Font Size</span>
-              <select id="font-size-mode">
-                <option value="tiny">Tiny</option>
-                <option value="small" selected>Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="toggle-row settings-toggles">
-            <label class="toggle">
-              <input id="auto-fetch" type="checkbox" checked>
-              <span>Auto fetch subtitles</span>
-            </label>
-            <label class="toggle">
-              <input id="auto-scroll" type="checkbox" checked>
-              <span>Auto scroll</span>
-            </label>
-            <label class="toggle">
-              <input id="highlight-translation" type="checkbox" checked>
-              <span>Highlight translation</span>
-            </label>
-          </div>
-        </div>
-
-        <div id="dictionary-backdrop" class="dictionary-backdrop hidden"></div>
-        <div id="dictionary-popup" class="dictionary-popup hidden">
-          <div class="dictionary-header">
-            <h3 id="dictionary-word">Word</h3>
-            <button id="dictionary-close" class="ghost icon-button icon-button-small" type="button">Close</button>
-          </div>
-          <p id="dictionary-phonetic" class="dictionary-phonetic"></p>
-          <div id="dictionary-body" class="dictionary-body">Dictionary details will appear here.</div>
-          <button id="save-word" class="primary save-word-button" type="button">Save Word</button>
-        </div>
       </aside>
 
       <section class="panel control-panel">
@@ -268,6 +156,118 @@
         </div>
       </section>
     </main>
+
+    <div id="panel-backdrop" class="panel-backdrop hidden"></div>
+
+    <div id="words-panel" class="side-popover hidden">
+      <div class="side-popover-header">
+        <h3>Saved Words</h3>
+        <button id="words-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+      </div>
+      <div id="saved-words-list" class="saved-words-list"></div>
+    </div>
+
+    <div id="favorites-panel" class="side-popover hidden">
+      <div class="side-popover-header">
+        <h3>Favorites</h3>
+        <button id="favorites-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+      </div>
+      <div id="favorites-list" class="favorites-list"></div>
+    </div>
+
+    <div id="history-panel" class="side-popover hidden">
+      <div class="side-popover-header">
+        <h3>History</h3>
+        <button id="history-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+      </div>
+      <div id="history-list" class="favorites-list"></div>
+    </div>
+
+    <div id="saved-lines-panel" class="side-popover hidden">
+      <div class="side-popover-header">
+        <h3>Saved Lines</h3>
+        <button id="saved-lines-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+      </div>
+      <div id="saved-lines-list" class="saved-lines-list"></div>
+    </div>
+
+    <div id="settings-panel" class="side-popover hidden">
+      <div class="side-popover-header">
+        <h3>Settings</h3>
+        <button id="settings-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+      </div>
+
+      <div class="field-grid transcript-controls">
+        <label class="field">
+          <span>Subtitle Track</span>
+          <select id="subtitle-track"></select>
+        </label>
+
+        <label class="field">
+          <span>Display Mode</span>
+          <select id="display-mode">
+            <option value="both">Original + Translation</option>
+            <option value="original">Original only</option>
+            <option value="translation">Translation only</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Translation Language</span>
+          <select id="translation-language">
+            <option value="ja" selected>Japanese</option>
+            <option value="en">English</option>
+            <option value="ko">Korean</option>
+            <option value="zh-CN">Chinese</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Provider</span>
+          <select id="translation-provider">
+            <option value="google" selected>Google</option>
+            <option value="deepl">DeepL</option>
+            <option value="openai">GPT-4.1 mini</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Font Size</span>
+          <select id="font-size-mode">
+            <option value="tiny">Tiny</option>
+            <option value="small" selected>Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="toggle-row settings-toggles">
+        <label class="toggle">
+          <input id="auto-fetch" type="checkbox" checked>
+          <span>Auto fetch subtitles</span>
+        </label>
+        <label class="toggle">
+          <input id="auto-scroll" type="checkbox" checked>
+          <span>Auto scroll</span>
+        </label>
+        <label class="toggle">
+          <input id="highlight-translation" type="checkbox" checked>
+          <span>Highlight translation</span>
+        </label>
+      </div>
+    </div>
+
+    <div id="dictionary-backdrop" class="dictionary-backdrop hidden"></div>
+    <div id="dictionary-popup" class="dictionary-popup hidden">
+      <div class="dictionary-header">
+        <h3 id="dictionary-word">Word</h3>
+        <button id="dictionary-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+      </div>
+      <p id="dictionary-phonetic" class="dictionary-phonetic"></p>
+      <div id="dictionary-body" class="dictionary-body">Dictionary details will appear here.</div>
+      <button id="save-word" class="primary save-word-button" type="button">Save Word</button>
+    </div>
 
     <nav class="bottom-nav" aria-label="Quick navigation">
       <button id="nav-home" class="bottom-nav-button" type="button" aria-label="Home">&#8962;</button>

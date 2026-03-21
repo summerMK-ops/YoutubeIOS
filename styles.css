@@ -877,16 +877,16 @@ select {
 .side-popover {
   position: fixed;
   left: 50%;
-  top: max(10px, env(safe-area-inset-top, 0));
-  bottom: max(10px, env(safe-area-inset-bottom, 0));
+  top: max(0px, env(safe-area-inset-top, 0));
+  bottom: max(0px, env(safe-area-inset-bottom, 0));
   transform: translate(-50%, 32px);
-  width: min(960px, calc(100vw - 20px));
-  max-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 20px);
+  width: min(1080px, 100vw);
+  max-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
   overflow: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 18px 18px 20px;
+  padding: 18px 18px 22px;
   border: 1px solid rgba(111, 235, 216, 0.16);
-  border-radius: 30px 30px 22px 22px;
+  border-radius: 0;
   background:
     linear-gradient(180deg, rgba(17, 24, 36, 0.98), rgba(10, 15, 24, 0.98)),
     var(--panel-strong);
@@ -1533,17 +1533,17 @@ select {
 
   .side-popover {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0) + 6px);
-    left: 6px;
-    right: 6px;
-    bottom: calc(env(safe-area-inset-bottom, 0) + 6px);
+    top: env(safe-area-inset-top, 0);
+    left: 0;
+    right: 0;
+    bottom: 0;
     transform: translateY(34px);
     width: auto;
-    max-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 12px);
+    max-height: calc(100dvh - env(safe-area-inset-top, 0));
     height: auto;
     margin-top: 0;
-    border-radius: 22px;
-    padding: 14px 14px 16px;
+    border-radius: 0;
+    padding: 14px 14px calc(env(safe-area-inset-bottom, 0) + 16px);
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 72;
@@ -1560,7 +1560,7 @@ select {
   .side-popover-header {
     top: 0;
     margin: -14px -14px 12px;
-    padding: 14px 14px 10px;
+    padding: calc(env(safe-area-inset-top, 0) + 10px) 14px 10px;
   }
 
   .bottom-nav {
