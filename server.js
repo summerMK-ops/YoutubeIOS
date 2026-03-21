@@ -58,6 +58,10 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
+function createStaticEtag(stat) {
+  return `"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+}
+
 function extractVideoId(input) {
   if (!input) {
     return "";
@@ -1555,12 +1559,31 @@ async function serveStatic(requestUrl, response) {
     const ext = path.extname(targetPath).toLowerCase();
     const cacheControl = pathname === "/sw.js"
       ? "no-store"
+      : ext === ".js" || ext === ".css"
+        ? "public, max-age=3600, must-revalidate"
+        : ext === ".html"
+          ? "no-cache"
       : ext === ".png" || ext === ".svg" || ext === ".ico"
         ? "public, max-age=86400"
         : "no-store";
+    const etag = createStaticEtag(stat);
+    const lastModified = stat.mtime.toUTCString();
+
+    if (request.headers["if-none-match"] === etag) {
+      response.writeHead(304, {
+        "Cache-Control": cacheControl,
+        "ETag": etag,
+        "Last-Modified": lastModified
+      });
+      response.end();
+      return;
+    }
+
     response.writeHead(200, {
       "Content-Type": mimeTypes[ext] || "application/octet-stream",
-      "Cache-Control": cacheControl
+      "Cache-Control": cacheControl,
+      "ETag": etag,
+      "Last-Modified": lastModified
     });
     fs.createReadStream(targetPath).pipe(response);
   } catch (_error) {
