@@ -8,6 +8,8 @@ const PUNCTUATION_END_RE = /([.?!]+|[。！？]+)["')\]]*$/;
 const ACTIVE_CUE_LOOKAHEAD = 0.2;
 const ACTIVE_CUE_HOLD = 0.28;
 const DEFAULT_VIDEO_ID = "gLdgEYAxJ8A";
+const INITIAL_BOOTSTRAP_DELAY_MS = 1200;
+const INITIAL_SEARCH_QUERY = "english vlog";
 const PLAYBACK_STORAGE_KEY = "trancy-playback-positions";
 const FAVORITES_STORAGE_KEY = "trancy-favorites";
 const SAVED_WORDS_STORAGE_KEY = "trancy-saved-words";
@@ -49,12 +51,71 @@ const state = {
   dictionaryAudio: null,
   dictionaryResumePlayback: false,
   transcriptRequestId: 0,
-  isSeekingWithSlider: false
+  isSeekingWithSlider: false,
+  initialBootstrapStarted: false
 };
+
+let youtubeIframeApiPromise = null;
 
 function syncViewportHeight() {
   const viewportHeight = window.visualViewport?.height || window.innerHeight;
   document.documentElement.style.setProperty("--app-height", `${viewportHeight}px`);
+}
+
+function loadYouTubeIframeApi() {
+  if (window.YT?.Player) {
+    return Promise.resolve();
+  }
+
+  if (!youtubeIframeApiPromise) {
+    youtubeIframeApiPromise = new Promise((resolve, reject) => {
+      const existingScript = document.querySelector('script[data-youtube-iframe-api="true"]');
+      if (existingScript) {
+        existingScript.addEventListener("load", resolve, { once: true });
+        existingScript.addEventListener("error", () => reject(new Error("Failed to load YouTube iframe API.")), { once: true });
+        return;
+      }
+
+      const previousReady = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof previousReady === "function") {
+          previousReady();
+        }
+        resolve();
+      };
+
+      const script = document.createElement("script");
+      script.src = "https://www.youtube.com/iframe_api";
+      script.async = true;
+      script.defer = true;
+      script.dataset.youtubeIframeApi = "true";
+      script.addEventListener("error", () => reject(new Error("Failed to load YouTube iframe API.")), { once: true });
+      document.head.appendChild(script);
+    });
+  }
+
+  return youtubeIframeApiPromise;
+}
+
+async function bootstrapInitialVideo() {
+  const initialVideo = getInitialVideoMeta();
+  await loadYouTubeIframeApi();
+  try {
+    await handleVideoSelection(initialVideo);
+  } catch (_error) {
+    createPlayer(initialVideo.videoId || DEFAULT_VIDEO_ID);
+  }
+}
+
+function startInitialBootstrap() {
+  if (state.initialBootstrapStarted) {
+    return;
+  }
+
+  state.initialBootstrapStarted = true;
+  window.setTimeout(() => {
+    bootstrapInitialVideo().catch(() => {});
+  }, INITIAL_BOOTSTRAP_DELAY_MS);
 }
 
 const elements = {
@@ -1779,13 +1840,6 @@ async function loadVideoFromInput() {
   });
 }
 
-window.onYouTubeIframeAPIReady = () => {
-  const initialVideo = getInitialVideoMeta();
-  handleVideoSelection(initialVideo).catch(() => {
-    createPlayer(initialVideo.videoId || DEFAULT_VIDEO_ID);
-  });
-};
-
 async function handleSubtitleFile(file) {
   const content = await file.text();
   const extension = file.name.split(".").pop()?.toLowerCase();
@@ -2425,8 +2479,6 @@ renderSavedWords();
 updateSaveWordButton();
 updateSaveCurrentLineButton();
 updateRepeatButtons();
+startInitialBootstrap();
 elements.urlInput.value = `https://www.youtube.com/watch?v=${getInitialVideoMeta().videoId || DEFAULT_VIDEO_ID}`;
-elements.searchQuery.value = "english vlog";
-loadSearch(elements.searchQuery.value).catch(() => {
-  elements.searchStatus.textContent = "初期検索を取得できませんでした。";
-});
+elements.searchQuery.value = INITIAL_SEARCH_QUERY;
