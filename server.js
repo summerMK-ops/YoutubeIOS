@@ -18,10 +18,13 @@ const ytDlpBinary = process.env.YT_DLP_BIN || "yt-dlp";
 const transcriptRequestCache = new Map();
 const searchResponseCache = new Map();
 const recommendationResponseCache = new Map();
+const dictionaryResponseCache = new Map();
 const searchRequestCache = new Map();
 const recommendationRequestCache = new Map();
+const dictionaryRequestCache = new Map();
 const SEARCH_CACHE_TTL_MS = 1000 * 60 * 10;
 const RECOMMENDATION_CACHE_TTL_MS = 1000 * 60 * 10;
+const DICTIONARY_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -1518,6 +1521,7 @@ async function handleTranscriptApi(requestUrl, response) {
 async function handleDictionaryApi(requestUrl, response) {
   const word = String(requestUrl.searchParams.get("word") || "").trim();
   const provider = requestUrl.searchParams.get("provider") || "google";
+  const cacheKey = `${provider}:${word.toLowerCase()}`;
 
   if (!word) {
     sendJson(response, 400, { error: "word を指定してください。" });
@@ -1525,6 +1529,19 @@ async function handleDictionaryApi(requestUrl, response) {
   }
 
   try {
+    const cached = getMemoryCache(dictionaryResponseCache, cacheKey);
+    if (cached) {
+      sendJson(response, 200, cached);
+      return;
+    }
+
+    if (dictionaryRequestCache.has(cacheKey)) {
+      const pendingPayload = await dictionaryRequestCache.get(cacheKey);
+      sendJson(response, 200, pendingPayload);
+      return;
+    }
+
+    const pendingRequest = (async () => {
     const dictionaryResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, {
       headers: {
         "User-Agent": "Mozilla/5.0 Codex Transcript App"
@@ -1545,42 +1562,53 @@ async function handleDictionaryApi(requestUrl, response) {
     const audioUrl = entry.phonetics?.find((item) => item.audio)?.audio || "";
     const meanings = Array.isArray(entry.meanings) ? entry.meanings.slice(0, 3) : [];
     const translate = provider === "deepl" ? translateTextWithDeepL : translateTextWithGoogle;
-    const wordTranslation = await translate(entry.word || word, "ja", "en").catch(() => "");
+    const wordTranslationPromise = translate(entry.word || word, "ja", "en").catch(() => "");
 
-    const translatedMeanings = [];
-    for (const meaning of meanings) {
-      const definitions = Array.isArray(meaning.definitions) ? meaning.definitions.slice(0, 2) : [];
-      const translatedDefinitions = [];
+    const translatedMeanings = await Promise.all(
+      meanings.map(async (meaning) => {
+        const definitions = Array.isArray(meaning.definitions) ? meaning.definitions.slice(0, 2) : [];
+        const translatedDefinitions = await Promise.all(
+          definitions.map(async (definition) => {
+            const english = normalizeCueText(definition.definition || "");
+            const japanese = english
+              ? await translate(english, "ja", "en").catch(() => "")
+              : "";
+            return {
+              en: english,
+              ja: japanese
+            };
+          })
+        );
 
-      for (const definition of definitions) {
-        const english = normalizeCueText(definition.definition || "");
-        const japanese = english
-          ? await translate(english, "ja", "en").catch(() => "")
-          : "";
-        translatedDefinitions.push({
-          en: english,
-          ja: japanese
-        });
-      }
+        return {
+          partOfSpeech: meaning.partOfSpeech || "",
+          definitions: translatedDefinitions
+        };
+      })
+    );
 
-      translatedMeanings.push({
-        partOfSpeech: meaning.partOfSpeech || "",
-        definitions: translatedDefinitions
-      });
-    }
-
-    sendJson(response, 200, {
+    const result = {
       word: entry.word || word,
       phonetic,
       audioUrl,
-      wordTranslation,
+      wordTranslation: await wordTranslationPromise,
       meaning: translatedMeanings[0]?.definitions?.[0]?.ja || "",
       meanings: translatedMeanings
-    });
+    };
+
+    setMemoryCache(dictionaryResponseCache, cacheKey, result, DICTIONARY_CACHE_TTL_MS);
+    return result;
+    })();
+
+    dictionaryRequestCache.set(cacheKey, pendingRequest);
+    const result = await pendingRequest;
+    sendJson(response, 200, result);
   } catch (error) {
     sendJson(response, 500, {
       error: error.message || "辞書情報の取得に失敗しました。"
     });
+  } finally {
+    dictionaryRequestCache.delete(cacheKey);
   }
 }
 
