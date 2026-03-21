@@ -989,7 +989,10 @@ function renderTranscript() {
       <article class="${classes.join(" ")}" data-index="${index}">
         <div class="cue-meta">
           <div class="cue-time">${formatTime(cue.start)} - ${formatTime(cue.end)}</div>
-          <button class="ghost cue-copy-symbol" type="button" data-copy-index="${index}" aria-label="Copy highlighted English line" data-label-default="⧉" data-feedback-label="✓">⧉</button>
+          <div class="cue-action-group">
+            <button class="ghost cue-save-symbol ${isLineSaved(cue) ? "is-active" : ""}" type="button" data-save-index="${index}" aria-label="Save highlighted English line">${isLineSaved(cue) ? "★" : "✦"}</button>
+            <button class="ghost cue-copy-symbol" type="button" data-copy-index="${index}" aria-label="Copy highlighted English line" data-label-default="⧉" data-feedback-label="✓">⧉</button>
+          </div>
         </div>
         <p class="cue-original">${renderWordMarkup(cue.text)}</p>
         <p class="cue-translation">${escapeHtml(cue.translation || "翻訳はありません")}</p>
@@ -1029,6 +1032,14 @@ function renderTranscript() {
       event.stopPropagation();
       const cue = state.subtitles[Number(node.dataset.copyIndex || -1)];
       await copyEnglishText(cue?.text || "", node);
+    });
+  });
+
+  elements.transcriptList.querySelectorAll(".cue-save-symbol").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const cue = state.subtitles[Number(node.dataset.saveIndex || -1)];
+      toggleSaveLine(cue);
     });
   });
 }

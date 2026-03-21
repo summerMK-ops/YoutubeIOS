@@ -1068,8 +1068,18 @@ select {
   gap: 10px;
 }
 
-.cue-copy-symbol {
+.cue-action-group {
   display: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.cue.active .cue-action-group {
+  display: inline-flex;
+}
+
+.cue-save-symbol,
+.cue-copy-symbol {
   width: 28px;
   min-width: 28px;
   height: 28px;
@@ -1080,10 +1090,6 @@ select {
   justify-content: center;
   font-size: 0.9rem;
   font-weight: 800;
-}
-
-.cue.active .cue-copy-symbol {
-  display: inline-flex;
 }
 
 .cue-original,
@@ -1323,8 +1329,8 @@ select {
     display: block;
   }
 
-  .cue.active .cue-copy-symbol {
-    display: inline-flex;
+  .cue-save-symbol,
+  .cue-copy-symbol {
     width: 24px;
     min-width: 24px;
     height: 24px;
