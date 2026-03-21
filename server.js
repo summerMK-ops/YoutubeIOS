@@ -15,6 +15,12 @@ const cacheDir = path.join(rootDir, ".cache");
 const transcriptCacheDir = path.join(cacheDir, "transcripts");
 const ytDlpBinary = process.env.YT_DLP_BIN || "yt-dlp";
 const transcriptRequestCache = new Map();
+const searchResponseCache = new Map();
+const recommendationResponseCache = new Map();
+const searchRequestCache = new Map();
+const recommendationRequestCache = new Map();
+const SEARCH_CACHE_TTL_MS = 1000 * 60 * 10;
+const RECOMMENDATION_CACHE_TTL_MS = 1000 * 60 * 10;
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -60,6 +66,27 @@ function sendJson(response, statusCode, payload) {
 
 function createStaticEtag(stat) {
   return `"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+}
+
+function getMemoryCache(cache, key) {
+  const entry = cache.get(key);
+  if (!entry) {
+    return null;
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    cache.delete(key);
+    return null;
+  }
+
+  return entry.value;
+}
+
+function setMemoryCache(cache, key, value, ttlMs) {
+  cache.set(key, {
+    value,
+    expiresAt: Date.now() + ttlMs
+  });
 }
 
 function extractVideoId(input) {
@@ -1610,6 +1637,129 @@ async function handleTranscriptApi(requestUrl, response) {
     sendJson(response, 500, {
       error: error.message || "Failed to fetch transcript."
     });
+  }
+}
+
+async function handleSearchApi(requestUrl, response) {
+  const query = requestUrl.searchParams.get("q")?.trim();
+  if (!query) {
+    sendJson(response, 400, { error: "検索ワードを指定してください。" });
+    return;
+  }
+
+  const cacheKey = query.toLowerCase();
+
+  try {
+    const cached = getMemoryCache(searchResponseCache, cacheKey);
+    if (cached) {
+      sendJson(response, 200, cached);
+      return;
+    }
+
+    if (searchRequestCache.has(cacheKey)) {
+      const pendingPayload = await searchRequestCache.get(cacheKey);
+      sendJson(response, 200, pendingPayload);
+      return;
+    }
+
+    const pendingRequest = (async () => {
+      const items = await searchVideos(query);
+      const payload = { query, items };
+      setMemoryCache(searchResponseCache, cacheKey, payload, SEARCH_CACHE_TTL_MS);
+      return payload;
+    })();
+
+    searchRequestCache.set(cacheKey, pendingRequest);
+    const payload = await pendingRequest;
+    sendJson(response, 200, payload);
+  } catch (error) {
+    sendJson(response, 500, { error: error.message || "検索に失敗しました。" });
+  } finally {
+    searchRequestCache.delete(cacheKey);
+  }
+}
+
+async function handleRecommendationsApi(requestUrl, response) {
+  const videoId = extractVideoId(requestUrl.searchParams.get("videoId"));
+  if (!videoId) {
+    sendJson(response, 400, { error: "有効な videoId を指定してください。" });
+    return;
+  }
+
+  const cacheKey = videoId;
+
+  try {
+    const cached = getMemoryCache(recommendationResponseCache, cacheKey);
+    if (cached) {
+      sendJson(response, 200, cached);
+      return;
+    }
+
+    if (recommendationRequestCache.has(cacheKey)) {
+      const pendingPayload = await recommendationRequestCache.get(cacheKey);
+      sendJson(response, 200, pendingPayload);
+      return;
+    }
+
+    const pendingRequest = (async () => {
+      const items = await fetchRecommendations(videoId);
+      const payload = { videoId, items };
+      setMemoryCache(recommendationResponseCache, cacheKey, payload, RECOMMENDATION_CACHE_TTL_MS);
+      return payload;
+    })();
+
+    recommendationRequestCache.set(cacheKey, pendingRequest);
+    const payload = await pendingRequest;
+    sendJson(response, 200, payload);
+  } catch (error) {
+    sendJson(response, 500, { error: error.message || "おすすめ動画の取得に失敗しました。" });
+  } finally {
+    recommendationRequestCache.delete(cacheKey);
+  }
+}
+
+async function handleTranscriptApi(requestUrl, response) {
+  const videoId = extractVideoId(requestUrl.searchParams.get("videoId"));
+  const trackIndex = Number(requestUrl.searchParams.get("trackIndex") || "0");
+  const language = requestUrl.searchParams.get("lang") || "ja";
+  const provider = requestUrl.searchParams.get("provider") || "google";
+
+  if (!videoId) {
+    sendJson(response, 400, { error: "Missing or invalid videoId." });
+    return;
+  }
+
+  const cacheKey = buildTranscriptCacheKey(videoId, language, provider, trackIndex);
+
+  try {
+    const cached = await readCachedTranscript(cacheKey);
+    if (cached) {
+      sendJson(response, 200, cached);
+      return;
+    }
+
+    if (transcriptRequestCache.has(cacheKey)) {
+      const pendingPayload = await transcriptRequestCache.get(cacheKey);
+      sendJson(response, 200, pendingPayload);
+      return;
+    }
+
+    const pendingRequest = (async () => {
+      const payload = await getTranscriptWithAggressiveFallback(videoId, trackIndex, language, provider);
+      await writeCachedTranscript(cacheKey, payload);
+      return payload;
+    })();
+
+    transcriptRequestCache.set(cacheKey, pendingRequest);
+    const payload = await pendingRequest;
+    sendJson(response, 200, payload);
+  } catch (error) {
+    console.error(`[transcript] failed for videoId=${videoId} trackIndex=${trackIndex} lang=${language} provider=${provider}`, error);
+    sendJson(response, 500, {
+      error: error.message || "Failed to fetch transcript."
+    });
+  } finally {
+    transcriptRequestCache.delete(cacheKey);
   }
 }
 
