@@ -8,7 +8,7 @@ const { spawn } = require("node:child_process");
 const ffmpegPath = require("ffmpeg-static");
 const ytdl = require("ytdl-core");
 
-const rootDir = __dirname;
+const rootDir = path.resolve(process.cwd());
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
 const cacheDir = path.join(rootDir, ".cache");
@@ -1570,7 +1570,7 @@ async function handleDictionaryApi(requestUrl, response) {
 
 async function serveStatic(requestUrl, response) {
   const pathname = requestUrl.pathname === "/" ? "/index.html" : requestUrl.pathname;
-  const targetPath = path.normalize(path.join(rootDir, pathname));
+  const targetPath = path.resolve(rootDir, `.${pathname}`);
   if (!targetPath.startsWith(rootDir)) {
     sendJson(response, 403, { error: "Forbidden" });
     return;
@@ -1613,7 +1613,8 @@ async function serveStatic(requestUrl, response) {
       "Last-Modified": lastModified
     });
     fs.createReadStream(targetPath).pipe(response);
-  } catch (_error) {
+  } catch (error) {
+    console.error(`[static] failed path=${pathname} target=${targetPath}`, error);
     sendJson(response, 404, { error: "Not found" });
   }
 }
