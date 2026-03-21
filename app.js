@@ -2324,6 +2324,26 @@ function repeatGroupByCueIndex(index) {
   seekTo(cue.start, true);
 }
 
+function repeatCue(index) {
+  const cue = state.subtitles[index];
+  if (!cue) {
+    return;
+  }
+
+  if (state.repeatMode?.type === "cue" && state.repeatMode.index === index) {
+    clearRepeatMode();
+    return;
+  }
+
+  setRepeatMode({
+    type: "cue",
+    index,
+    start: cue.start,
+    end: cue.end
+  });
+  seekTo(cue.start, true);
+}
+
 renderEmptyState(elements.searchResults, "検索結果はここに表示されます。");
 renderEmptyState(elements.recommendations, "おすすめ動画はここに表示されます。");
 renderEmptyState(elements.transcriptList, "字幕を読み込むと、ここにタイムスタンプ一覧が表示されます。");
