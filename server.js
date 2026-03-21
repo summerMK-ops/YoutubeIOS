@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
+const zlib = require("node:zlib");
 const { URL } = require("node:url");
 const { spawn } = require("node:child_process");
 const ffmpegPath = require("ffmpeg-static");
@@ -66,6 +67,21 @@ function sendJson(response, statusCode, payload) {
 
 function createStaticEtag(stat) {
   return `"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+}
+
+function isCompressibleExtension(ext) {
+  return [".html", ".js", ".css", ".json", ".webmanifest", ".svg"].includes(ext);
+}
+
+function pickContentEncoding(acceptEncoding = "") {
+  const value = String(acceptEncoding).toLowerCase();
+  if (value.includes("br")) {
+    return "br";
+  }
+  if (value.includes("gzip")) {
+    return "gzip";
+  }
+  return "";
 }
 
 function getMemoryCache(cache, key) {
@@ -1584,6 +1600,8 @@ async function serveStatic(request, requestUrl, response) {
     }
 
     const ext = path.extname(targetPath).toLowerCase();
+    const shouldCompress = isCompressibleExtension(ext);
+    const contentEncoding = shouldCompress ? pickContentEncoding(request.headers["accept-encoding"]) : "";
     const cacheControl = pathname === "/sw.js"
       ? "no-store"
       : ext === ".js" || ext === ".css"
@@ -1610,9 +1628,22 @@ async function serveStatic(request, requestUrl, response) {
       "Content-Type": mimeTypes[ext] || "application/octet-stream",
       "Cache-Control": cacheControl,
       "ETag": etag,
-      "Last-Modified": lastModified
+      "Last-Modified": lastModified,
+      "Vary": "Accept-Encoding",
+      ...(contentEncoding ? { "Content-Encoding": contentEncoding } : {})
     });
-    fs.createReadStream(targetPath).pipe(response);
+
+    const stream = fs.createReadStream(targetPath);
+    if (contentEncoding === "br") {
+      stream.pipe(zlib.createBrotliCompress()).pipe(response);
+      return;
+    }
+    if (contentEncoding === "gzip") {
+      stream.pipe(zlib.createGzip()).pipe(response);
+      return;
+    }
+
+    stream.pipe(response);
   } catch (error) {
     console.error(`[static] failed path=${pathname} target=${targetPath}`, error);
     sendJson(response, 404, { error: "Not found" });
