@@ -14,6 +14,7 @@ const host = process.env.HOST || "0.0.0.0";
 const cacheDir = path.join(rootDir, ".cache");
 const transcriptCacheDir = path.join(cacheDir, "transcripts");
 const ytDlpBinary = process.env.YT_DLP_BIN || "yt-dlp";
+const transcriptRequestCache = new Map();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -330,25 +331,35 @@ async function translateCues(cues, targetLanguage, sourceLanguage = "", provider
     return cues;
   }
 
-  const translatedCues = [];
-  for (const cue of cues) {
-    try {
-      const translation = provider === "deepl"
-        ? await translateTextWithDeepL(cue.text, targetLanguage, sourceLanguage)
-        : await translateTextWithGoogle(cue.text, targetLanguage, sourceLanguage);
-      translatedCues.push({
-        ...cue,
-        translation
-      });
-    } catch (_error) {
-      translatedCues.push({
-        ...cue,
-        translation: cue.translation || ""
-      });
+  const concurrency = provider === "deepl" ? 4 : 8;
+  const results = Array.from({ length: cues.length });
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < cues.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      const cue = cues[currentIndex];
+
+      try {
+        const translation = provider === "deepl"
+          ? await translateTextWithDeepL(cue.text, targetLanguage, sourceLanguage)
+          : await translateTextWithGoogle(cue.text, targetLanguage, sourceLanguage);
+        results[currentIndex] = {
+          ...cue,
+          translation
+        };
+      } catch (_error) {
+        results[currentIndex] = {
+          ...cue,
+          translation: cue.translation || ""
+        };
+      }
     }
   }
 
-  return translatedCues;
+  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(cues.length, 1)) }, () => worker()));
+  return results;
 }
 
 function trackLabelFrom(track) {
@@ -647,22 +658,38 @@ async function ensureCacheDirs() {
   await fsp.mkdir(transcriptCacheDir, { recursive: true });
 }
 
-function cachePathFor(videoId, language) {
-  return path.join(transcriptCacheDir, `${videoId}.${language}.json`);
+function sanitizeCachePart(value) {
+  return String(value || "")
+    .replace(/[^a-z0-9._-]+/gi, "_")
+    .replace(/^_+|_+$/g, "")
+    || "default";
 }
 
-async function readCachedTranscript(videoId, language) {
+function buildTranscriptCacheKey(videoId, language, provider = "google", trackIndex = 0) {
+  return [
+    sanitizeCachePart(videoId),
+    sanitizeCachePart(language),
+    sanitizeCachePart(provider),
+    sanitizeCachePart(trackIndex)
+  ].join(".");
+}
+
+function cachePathFor(cacheKey) {
+  return path.join(transcriptCacheDir, `${cacheKey}.json`);
+}
+
+async function readCachedTranscript(cacheKey) {
   try {
-    const raw = await fsp.readFile(cachePathFor(videoId, language), "utf8");
+    const raw = await fsp.readFile(cachePathFor(cacheKey), "utf8");
     return JSON.parse(raw);
   } catch (_error) {
     return null;
   }
 }
 
-async function writeCachedTranscript(videoId, language, payload) {
+async function writeCachedTranscript(cacheKey, payload) {
   await ensureCacheDirs();
-  await fsp.writeFile(cachePathFor(videoId, language), JSON.stringify(payload), "utf8");
+  await fsp.writeFile(cachePathFor(cacheKey), JSON.stringify(payload), "utf8");
 }
 
 async function loadTransformersModule() {
@@ -1045,7 +1072,8 @@ function normalizeAsrChunks(output) {
 
 async function transcribeWithAsr(videoId, language, provider = "google") {
   const targetLanguage = language || "ja";
-  const cached = await readCachedTranscript(videoId, targetLanguage);
+  const cacheKey = buildTranscriptCacheKey(videoId, targetLanguage, provider, "asr");
+  const cached = await readCachedTranscript(cacheKey);
   if (cached) {
     return cached;
   }
@@ -1072,7 +1100,7 @@ async function transcribeWithAsr(videoId, language, provider = "google") {
     subtitles
   };
 
-  await writeCachedTranscript(videoId, targetLanguage, payload);
+  await writeCachedTranscript(cacheKey, payload);
   return payload;
 }
 
@@ -1282,14 +1310,37 @@ async function handleTranscriptApi(requestUrl, response) {
     return;
   }
 
+  const cacheKey = buildTranscriptCacheKey(videoId, language, provider, trackIndex);
+
   try {
-    const payload = await getTranscriptWithAggressiveFallback(videoId, trackIndex, language, provider);
+    const cached = await readCachedTranscript(cacheKey);
+    if (cached) {
+      sendJson(response, 200, cached);
+      return;
+    }
+
+    if (transcriptRequestCache.has(cacheKey)) {
+      const pendingPayload = await transcriptRequestCache.get(cacheKey);
+      sendJson(response, 200, pendingPayload);
+      return;
+    }
+
+    const pendingRequest = (async () => {
+      const payload = await getTranscriptWithAggressiveFallback(videoId, trackIndex, language, provider);
+      await writeCachedTranscript(cacheKey, payload);
+      return payload;
+    })();
+
+    transcriptRequestCache.set(cacheKey, pendingRequest);
+    const payload = await pendingRequest;
     sendJson(response, 200, payload);
   } catch (error) {
     console.error(`[transcript] failed for videoId=${videoId} trackIndex=${trackIndex} lang=${language} provider=${provider}`, error);
     sendJson(response, 500, {
       error: error.message || "Failed to fetch transcript."
     });
+  } finally {
+    transcriptRequestCache.delete(cacheKey);
   }
 }
 
