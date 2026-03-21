@@ -107,6 +107,7 @@ const elements = {
   savedWordsList: document.getElementById("saved-words-list"),
   navHome: document.getElementById("nav-home"),
   navHistory: document.getElementById("nav-history"),
+  navWords: document.getElementById("nav-words"),
   navFavorites: document.getElementById("nav-favorites"),
   navLines: document.getElementById("nav-lines"),
   navSettings: document.getElementById("nav-settings"),
@@ -620,11 +621,11 @@ function setPopoverOpen(name, open) {
   state.activePopover = open ? name : (state.activePopover === name ? null : state.activePopover);
 
   const groups = [
-    ["settings", elements.settingsPanel, elements.settingsToggle],
-    ["favorites", elements.favoritesPanel, elements.favoritesToggle],
+    ["settings", elements.settingsPanel, elements.navSettings || elements.settingsToggle],
+    ["favorites", elements.favoritesPanel, elements.navFavorites || elements.favoritesToggle],
     ["history", elements.historyPanel, elements.navHistory],
-    ["saved-lines", elements.savedLinesPanel, elements.savedLinesToggle],
-    ["words", elements.wordsPanel, elements.wordsToggle]
+    ["saved-lines", elements.savedLinesPanel, elements.navLines || elements.savedLinesToggle],
+    ["words", elements.wordsPanel, elements.navWords || elements.wordsToggle]
   ];
 
   groups.forEach(([key, panel, toggle]) => {
@@ -1937,6 +1938,7 @@ document.addEventListener("click", (event) => {
     const clickedToggle = elements.settingsToggle?.contains(target)
       || elements.favoritesToggle?.contains(target)
       || elements.navHistory?.contains(target)
+      || elements.navWords?.contains(target)
       || elements.savedLinesToggle?.contains(target)
       || elements.wordsToggle?.contains(target)
       || elements.navFavorites?.contains(target)
@@ -2015,6 +2017,10 @@ elements.navHome?.addEventListener("click", () => {
 
 elements.navHistory?.addEventListener("click", () => {
   setPopoverOpen("history", state.activePopover !== "history");
+});
+
+elements.navWords?.addEventListener("click", () => {
+  setPopoverOpen("words", state.activePopover !== "words");
 });
 
 elements.navFavorites?.addEventListener("click", () => {

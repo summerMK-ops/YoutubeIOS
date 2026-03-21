@@ -948,7 +948,7 @@ select {
 .dictionary-popup {
   position: fixed;
   right: calc(16px + env(safe-area-inset-right, 0));
-  bottom: calc(16px + env(safe-area-inset-bottom, 0));
+  bottom: calc(92px + env(safe-area-inset-bottom, 0));
   width: min(360px, calc(100vw - 32px));
   padding: 18px;
   border-radius: 24px;
@@ -1013,6 +1013,7 @@ select {
 .save-word-button {
   margin-top: 12px;
   width: 100%;
+  margin-bottom: 4px;
 }
 
 .save-word-button.is-saved {
@@ -1499,7 +1500,7 @@ select {
   }
 
   .compact-transcript-actions {
-    gap: 2px;
+    display: none;
   }
 
   .compact-load-field {
@@ -1577,7 +1578,7 @@ select {
     right: 10px;
     bottom: calc(env(safe-area-inset-bottom, 0) + 8px);
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 6px;
     padding: 6px;
     border-radius: 16px;
@@ -1605,5 +1606,7 @@ select {
     left: 16px;
     right: 16px;
     width: auto;
+    bottom: calc(86px + env(safe-area-inset-bottom, 0));
+    max-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 104px);
   }
 }
