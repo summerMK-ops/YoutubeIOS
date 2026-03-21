@@ -38,6 +38,10 @@ body {
     env(safe-area-inset-left, 0);
 }
 
+body.window-panel-open {
+  overflow: hidden;
+}
+
 body.font-tiny {
   --font-scale: 0.62;
 }
@@ -854,20 +858,35 @@ select {
   padding: 8px 12px;
 }
 
+.panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at top, rgba(57, 198, 201, 0.12), transparent 28%),
+    rgba(3, 7, 13, 0.72);
+  backdrop-filter: blur(10px);
+  z-index: 54;
+}
+
 .side-popover {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  width: min(100%, 360px);
-  max-height: calc(100% - 36px);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(76vh, 820px);
   overflow: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  background: rgba(11, 16, 24, 0.96);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
-  z-index: 44;
+  padding: 18px 18px 20px;
+  border: 1px solid rgba(111, 235, 216, 0.16);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(17, 24, 36, 0.98), rgba(10, 15, 24, 0.98)),
+    var(--panel-strong);
+  box-shadow:
+    0 34px 80px rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  z-index: 55;
 }
 
 .side-popover-header {
@@ -875,11 +894,19 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  position: sticky;
+  top: -18px;
+  z-index: 1;
+  margin: -18px -18px 14px;
+  padding: 16px 18px 12px;
+  background: linear-gradient(180deg, rgba(17, 24, 36, 0.98), rgba(17, 24, 36, 0.84));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .side-popover-header h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.02rem;
 }
 
 .settings-toggles {
@@ -1482,19 +1509,30 @@ select {
 
   .side-popover {
     position: fixed;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    bottom: calc(env(safe-area-inset-bottom, 0) + 62px);
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    bottom: calc(env(safe-area-inset-bottom, 0) + 66px);
+    transform: none;
     width: auto;
     max-height: none;
     height: auto;
     margin-top: 0;
-    border-radius: 18px;
-    padding: 14px;
+    border-radius: 20px;
+    padding: 14px 14px 16px;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 58;
+  }
+
+  .panel-backdrop {
+    z-index: 57;
+  }
+
+  .side-popover-header {
+    top: -14px;
+    margin: -14px -14px 12px;
+    padding: 14px 14px 10px;
   }
 
   .bottom-nav {

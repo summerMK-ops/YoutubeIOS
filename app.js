@@ -109,6 +109,7 @@ const elements = {
   navFavorites: document.getElementById("nav-favorites"),
   navLines: document.getElementById("nav-lines"),
   navSettings: document.getElementById("nav-settings"),
+  panelBackdrop: document.getElementById("panel-backdrop"),
   dictionaryBackdrop: document.getElementById("dictionary-backdrop"),
   dictionaryPopup: document.getElementById("dictionary-popup"),
   dictionaryClose: document.getElementById("dictionary-close"),
@@ -505,13 +506,18 @@ function renderSavedLines() {
   `).join("");
 
   elements.savedLinesList.querySelectorAll(".saved-line-item").forEach((node) => {
-    node.addEventListener("click", () => {
+    node.addEventListener("click", async () => {
       const savedItem = state.savedLines.find((item) => item.id === node.dataset.lineId);
       if (!savedItem) {
         return;
       }
       closeAllPopovers();
-      seekTo(Number(savedItem.start || 0), true);
+      const targetStart = Number(savedItem.start || 0);
+      if (savedItem.videoId && savedItem.videoId !== state.currentVideoId) {
+        await handleVideoSelection(savedItem, { startSecondsOverride: targetStart });
+        return;
+      }
+      seekTo(targetStart, true);
     });
   });
 
@@ -625,6 +631,9 @@ function setPopoverOpen(name, open) {
     panel?.classList.toggle("hidden", !isOpen);
     toggle?.setAttribute("aria-expanded", isOpen ? "true" : "false");
   });
+
+  elements.panelBackdrop?.classList.toggle("hidden", !state.activePopover);
+  document.body.classList.toggle("window-panel-open", Boolean(state.activePopover));
 }
 
 function closeAllPopovers() {
@@ -1655,7 +1664,7 @@ async function loadAutoTranscript(videoId, trackIndex = 0) {
   applySubtitleData(payload.subtitles, status);
 }
 
-async function handleVideoSelection(item) {
+async function handleVideoSelection(item, options = {}) {
   const videoId = parseYouTubeId(item.videoId || item.url || "");
   if (!videoId) {
     window.alert("動画 ID を取得できませんでした。");
@@ -1668,7 +1677,9 @@ async function handleVideoSelection(item) {
   closeDictionaryPopup();
   closeAllPopovers();
   scrollWorkspaceToTop();
-  const resumeTime = getSavedPlaybackTime(videoId);
+  const resumeTime = Number.isFinite(options.startSecondsOverride)
+    ? Math.max(0, Number(options.startSecondsOverride))
+    : getSavedPlaybackTime(videoId);
   state.pendingResumeTime = resumeTime;
   elements.urlInput.value = `https://www.youtube.com/watch?v=${videoId}`;
   updateNowPlaying(item);
@@ -1988,6 +1999,10 @@ elements.navLines?.addEventListener("click", () => {
 
 elements.navSettings?.addEventListener("click", () => {
   setPopoverOpen("settings", state.activePopover !== "settings");
+});
+
+elements.panelBackdrop?.addEventListener("click", () => {
+  closeAllPopovers();
 });
 
 elements.copyCurrentEnglish?.addEventListener("click", async (event) => {
