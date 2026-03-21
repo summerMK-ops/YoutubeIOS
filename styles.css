@@ -1533,13 +1533,13 @@ select {
 
   .side-popover {
     position: fixed;
-    top: auto;
+    top: calc(env(safe-area-inset-top, 0) + 10px);
     left: 12px;
     right: 12px;
     bottom: calc(env(safe-area-inset-bottom, 0) + 66px);
     transform: translateY(34px);
     width: auto;
-    max-height: none;
+    max-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 86px);
     height: auto;
     margin-top: 0;
     border-radius: 20px;
@@ -1558,7 +1558,7 @@ select {
   }
 
   .side-popover-header {
-    top: -14px;
+    top: 0;
     margin: -14px -14px 12px;
     padding: 14px 14px 10px;
   }
