@@ -866,20 +866,27 @@ select {
     rgba(3, 7, 13, 0.72);
   backdrop-filter: blur(10px);
   z-index: 54;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.panel-backdrop.is-open {
+  opacity: 1;
 }
 
 .side-popover {
   position: fixed;
-  top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(520px, calc(100vw - 32px));
-  max-height: min(76vh, 820px);
+  bottom: 18px;
+  top: auto;
+  transform: translate(-50%, 32px);
+  width: min(560px, calc(100vw - 28px));
+  max-height: min(72vh, 760px);
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   padding: 18px 18px 20px;
   border: 1px solid rgba(111, 235, 216, 0.16);
-  border-radius: 26px;
+  border-radius: 30px 30px 22px 22px;
   background:
     linear-gradient(180deg, rgba(17, 24, 36, 0.98), rgba(10, 15, 24, 0.98)),
     var(--panel-strong);
@@ -887,6 +894,23 @@ select {
     0 34px 80px rgba(0, 0, 0, 0.52),
     0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   z-index: 55;
+  opacity: 0;
+  transition: transform 220ms ease, opacity 180ms ease;
+}
+
+.side-popover.is-open {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.side-popover::before {
+  content: "";
+  display: block;
+  width: 54px;
+  height: 5px;
+  margin: -4px auto 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .side-popover-header {
@@ -1509,11 +1533,11 @@ select {
 
   .side-popover {
     position: fixed;
-    top: 12px;
+    top: auto;
     left: 12px;
     right: 12px;
     bottom: calc(env(safe-area-inset-bottom, 0) + 66px);
-    transform: none;
+    transform: translateY(34px);
     width: auto;
     max-height: none;
     height: auto;
@@ -1523,6 +1547,10 @@ select {
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 58;
+  }
+
+  .side-popover.is-open {
+    transform: translateY(0);
   }
 
   .panel-backdrop {

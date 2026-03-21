@@ -14,6 +14,7 @@ const SAVED_WORDS_STORAGE_KEY = "trancy-saved-words";
 const SAVED_LINES_STORAGE_KEY = "trancy-saved-lines";
 const HISTORY_STORAGE_KEY = "trancy-history";
 const LAST_VIDEO_STORAGE_KEY = "trancy-last-video";
+const panelAnimationTimers = new WeakMap();
 
 const state = {
   player: null,
@@ -628,12 +629,39 @@ function setPopoverOpen(name, open) {
 
   groups.forEach(([key, panel, toggle]) => {
     const isOpen = state.activePopover === key;
-    panel?.classList.toggle("hidden", !isOpen);
+    togglePanelWindow(panel, isOpen);
     toggle?.setAttribute("aria-expanded", isOpen ? "true" : "false");
   });
 
-  elements.panelBackdrop?.classList.toggle("hidden", !state.activePopover);
+  togglePanelWindow(elements.panelBackdrop, Boolean(state.activePopover));
   document.body.classList.toggle("window-panel-open", Boolean(state.activePopover));
+}
+
+function togglePanelWindow(element, open) {
+  if (!element) {
+    return;
+  }
+
+  const activeTimer = panelAnimationTimers.get(element);
+  if (activeTimer) {
+    window.clearTimeout(activeTimer);
+    panelAnimationTimers.delete(element);
+  }
+
+  if (open) {
+    element.classList.remove("hidden");
+    requestAnimationFrame(() => {
+      element.classList.add("is-open");
+    });
+    return;
+  }
+
+  element.classList.remove("is-open");
+  const timer = window.setTimeout(() => {
+    element.classList.add("hidden");
+    panelAnimationTimers.delete(element);
+  }, 220);
+  panelAnimationTimers.set(element, timer);
 }
 
 function closeAllPopovers() {
