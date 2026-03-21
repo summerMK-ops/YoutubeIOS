@@ -474,7 +474,7 @@ function updateSaveCurrentLineButton() {
   const cue = getActiveCue();
   const saved = isLineSaved(cue);
   elements.saveCurrentLine.classList.toggle("is-active", saved);
-  elements.saveCurrentLine.innerHTML = `<span aria-hidden="true">${saved ? "★" : "☆"}</span>`;
+  elements.saveCurrentLine.innerHTML = `<span aria-hidden="true">${saved ? "★" : "✦"}</span>`;
   elements.saveCurrentLine.setAttribute("aria-label", saved ? "Saved current English line" : "Save current English line");
 }
 

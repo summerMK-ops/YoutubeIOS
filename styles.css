@@ -391,6 +391,11 @@ select {
   justify-content: center;
 }
 
+.current-subtitle-action-save {
+  color: #ffd76a;
+  border-color: rgba(255, 215, 106, 0.34);
+}
+
 .current-copy-cache {
   display: none;
 }
