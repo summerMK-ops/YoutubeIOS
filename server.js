@@ -1568,7 +1568,7 @@ async function handleDictionaryApi(requestUrl, response) {
   }
 }
 
-async function serveStatic(requestUrl, response) {
+async function serveStatic(request, requestUrl, response) {
   const pathname = requestUrl.pathname === "/" ? "/index.html" : requestUrl.pathname;
   const targetPath = path.resolve(rootDir, `.${pathname}`);
   if (!targetPath.startsWith(rootDir)) {
@@ -1787,7 +1787,7 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  await serveStatic(requestUrl, response);
+  await serveStatic(request, requestUrl, response);
 });
 
 function getLanAddress() {
