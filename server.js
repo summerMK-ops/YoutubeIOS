@@ -1298,6 +1298,7 @@ async function getTranscriptWithAggressiveFallback(videoId, trackIndex, language
   try {
     return await getYoutubeTranscriptOnly(videoId, trackIndex, language, provider);
   } catch (error) {
+    throw new Error(String(error?.message || error) || "Failed to fetch transcript.");
     const captionErrorMessage = String(error?.message || error);
 
     try {
