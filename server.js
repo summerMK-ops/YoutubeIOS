@@ -24,6 +24,7 @@ const dictionaryRequestCache = new Map();
 const SEARCH_CACHE_TTL_MS = 1000 * 60 * 10;
 const RECOMMENDATION_CACHE_TTL_MS = 1000 * 60 * 10;
 const DICTIONARY_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
+const CAPTION_LOOKUP_TIMEOUT_MS = 20000;
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -1494,7 +1495,7 @@ async function getTranscriptWithAggressiveFallback(videoId, trackIndex, language
   try {
     return await withTimeout(
       getYoutubeTranscriptOnly(videoId, trackIndex, language, provider),
-      8000,
+      CAPTION_LOOKUP_TIMEOUT_MS,
       "Caption lookup timed out."
     );
   } catch (error) {
