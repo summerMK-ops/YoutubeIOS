@@ -1060,6 +1060,24 @@ async function findFirstFile(directory, predicate) {
   return match ? path.join(directory, match) : "";
 }
 
+async function findSubtitleFile(directory, videoId) {
+  const names = await fsp.readdir(directory).catch(() => []);
+  const candidates = names.filter((name) =>
+    name.startsWith(`${videoId}.`) &&
+    (name.endsWith(".json3") || name.endsWith(".srv3") || name.endsWith(".vtt"))
+  );
+
+  if (!candidates.length) {
+    return "";
+  }
+
+  const preferred = candidates.find((name) => /\.en([.-]|$)/i.test(name))
+    || candidates.find((name) => /orig/i.test(name))
+    || candidates[0];
+
+  return path.join(directory, preferred);
+}
+
 function pickYtDlpSubtitleCandidate(metadata) {
   const sources = [
     metadata?.subtitles || {},
@@ -1161,17 +1179,13 @@ async function fetchTranscriptWithYtDlp(videoId, language, provider = "google") 
           "--paths", tempDir,
           videoUrl
         ]);
-
-        subtitlePath = await findFirstFile(
-          tempDir,
-          (name) => name.startsWith(`${videoId}.`) && (name.endsWith(".json3") || name.endsWith(".srv3") || name.endsWith(".vtt"))
-        );
-
-        if (subtitlePath) {
-          break;
-        }
       } catch (_error) {
-        // Try the next subtitle format.
+        // yt-dlp can still leave usable subtitle files even when it exits non-zero.
+      }
+
+      subtitlePath = await findSubtitleFile(tempDir, videoId);
+      if (subtitlePath) {
+        break;
       }
     }
 
