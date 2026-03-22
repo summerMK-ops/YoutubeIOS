@@ -163,6 +163,15 @@ function normalizeCueText(text) {
     .trim();
 }
 
+function withTimeout(promise, timeoutMs, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(message)), timeoutMs);
+    })
+  ]);
+}
+
 function parseCaptionEvents(json) {
   const events = Array.isArray(json?.events) ? json.events : [];
   const cues = [];
@@ -1326,12 +1335,20 @@ async function getYoutubeTranscriptOnly(videoId, trackIndex, language, provider 
 
 async function getTranscriptWithAggressiveFallback(videoId, trackIndex, language, provider = "google") {
   try {
-    return await getYoutubeTranscriptOnly(videoId, trackIndex, language, provider);
+    return await withTimeout(
+      getYoutubeTranscriptOnly(videoId, trackIndex, language, provider),
+      8000,
+      "Caption lookup timed out."
+    );
   } catch (error) {
     const captionErrorMessage = String(error?.message || error);
 
     try {
-      const asrPayload = await transcribeWithAsr(videoId, language, provider);
+      const asrPayload = await withTimeout(
+        transcribeWithAsr(videoId, language, provider),
+        12000,
+        "ASR timed out."
+      );
       return {
         source: "asr",
         videoId,
