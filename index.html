@@ -276,19 +276,16 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        let reloadingForNewServiceWorker = false;
+        navigator.serviceWorker.getRegistrations()
+          .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+          .catch(() => {});
+      });
+    }
 
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-          if (reloadingForNewServiceWorker) {
-            return;
-          }
-
-          reloadingForNewServiceWorker = true;
-          window.location.reload();
-        });
-
-        navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" })
-          .then((registration) => registration.update().catch(() => {}))
+    if ("caches" in window) {
+      window.addEventListener("load", () => {
+        caches.keys()
+          .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
           .catch(() => {});
       });
     }
