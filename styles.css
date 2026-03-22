@@ -1158,8 +1158,25 @@ select {
   line-height: 1.7;
 }
 
+.cue-original {
+  font-size: 1.08rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
 .cue-translation {
-  color: #4e686b;
+  color: #91a9b4;
+  font-size: 0.94rem;
+}
+
+.cue.active .cue-original {
+  color: #ffd54f;
+  font-weight: 800;
+  text-shadow: 0 0 18px rgba(255, 213, 79, 0.1);
+}
+
+.cue.active .cue-translation {
+  color: #d9ecf2;
 }
 
 .word-chip {
@@ -1400,9 +1417,17 @@ select {
 
   .cue-original,
   .cue-translation {
-    margin-top: 3px;
-    line-height: 1.25;
-    font-size: 0.76rem;
+    margin-top: 5px;
+    line-height: 1.38;
+  }
+
+  .cue-original {
+    font-size: 0.98rem;
+    font-weight: 700;
+  }
+
+  .cue-translation {
+    font-size: 0.82rem;
   }
 
   .control-panel {
@@ -1430,14 +1455,14 @@ select {
 
   .current-line {
     padding-right: 64px;
-    font-size: 0.94rem;
-    line-height: 1.18;
+    font-size: 1.04rem;
+    line-height: 1.28;
   }
 
   .current-translation {
     margin-top: 4px;
-    font-size: 0.78rem;
-    line-height: 1.18;
+    font-size: 0.86rem;
+    line-height: 1.26;
   }
 
   .transport-progress {
