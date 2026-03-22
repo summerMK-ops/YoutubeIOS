@@ -1387,12 +1387,12 @@ select {
 
   .transcript-list {
     margin-top: 0;
-    min-height: 190px;
-    max-height: 208px;
+    min-height: 228px;
+    max-height: 246px;
   }
 
   .cue {
-    padding: 6px 8px;
+    padding: 8px 10px;
     border-radius: 12px;
   }
 
@@ -1417,17 +1417,17 @@ select {
 
   .cue-original,
   .cue-translation {
-    margin-top: 5px;
-    line-height: 1.38;
+    margin-top: 4px;
+    line-height: 1.32;
   }
 
   .cue-original {
-    font-size: 0.98rem;
+    font-size: 0.92rem;
     font-weight: 700;
   }
 
   .cue-translation {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
   }
 
   .control-panel {
