@@ -224,6 +224,76 @@ function parseTranscriptXml(xml) {
   return cues;
 }
 
+function parseTranscriptVtt(vtt) {
+  const blocks = String(vtt)
+    .replace(/\r/g, "")
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  const cues = [];
+
+  for (const block of blocks) {
+    const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+    if (!lines.length || lines[0] === "WEBVTT") {
+      continue;
+    }
+
+    const timeLine = lines[0].includes("-->") ? lines[0] : lines[1];
+    if (!timeLine || !timeLine.includes("-->")) {
+      continue;
+    }
+
+    const [startRaw, endRaw] = timeLine.split("-->").map((part) => part.trim().split(" ")[0]);
+    const start = parseVttTimestamp(startRaw);
+    const end = parseVttTimestamp(endRaw);
+    const bodyStartIndex = lines[0].includes("-->") ? 1 : 2;
+    const text = normalizeCueText(lines.slice(bodyStartIndex).join(" "));
+
+    if (Number.isFinite(start) && Number.isFinite(end) && text) {
+      cues.push({
+        start,
+        end,
+        text,
+        translation: ""
+      });
+    }
+  }
+
+  return cues;
+}
+
+function parseVttTimestamp(value) {
+  const match = String(value).match(/(?:(\d+):)?(\d+):(\d+)(?:[.,](\d+))?/);
+  if (!match) {
+    return NaN;
+  }
+
+  const hours = Number(match[1] || 0);
+  const minutes = Number(match[2] || 0);
+  const seconds = Number(match[3] || 0);
+  const milliseconds = Number((match[4] || "0").padEnd(3, "0").slice(0, 3));
+  return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+}
+
+function parseSubtitlePayload(raw, extension = "") {
+  const normalizedExtension = extension.toLowerCase();
+  const trimmed = String(raw).trim();
+
+  if (!trimmed) {
+    return [];
+  }
+
+  if (normalizedExtension === "json3" || normalizedExtension === "srv3" || trimmed.startsWith("{")) {
+    return parseCaptionEvents(JSON.parse(trimmed));
+  }
+
+  if (normalizedExtension === "vtt" || trimmed.startsWith("WEBVTT")) {
+    return parseTranscriptVtt(trimmed);
+  }
+
+  return parseTranscriptXml(trimmed);
+}
+
 function normalizeProxySubtitleEntry(entry) {
   const start = Number(entry?.start);
   const end = Number(entry?.end ?? start + Number(entry?.dur || 0));
@@ -990,11 +1060,89 @@ async function findFirstFile(directory, predicate) {
   return match ? path.join(directory, match) : "";
 }
 
+function pickYtDlpSubtitleCandidate(metadata) {
+  const sources = [
+    metadata?.subtitles || {},
+    metadata?.automatic_captions || {}
+  ];
+  const languageKeys = [];
+
+  for (const source of sources) {
+    for (const key of Object.keys(source)) {
+      if (key === "live_chat") {
+        continue;
+      }
+      if (key === "en" || key.startsWith("en-") || key.startsWith("en_") || key.includes("en")) {
+        languageKeys.push([source, key]);
+      }
+    }
+  }
+
+  for (const [source, key] of languageKeys) {
+    const tracks = Array.isArray(source[key]) ? source[key] : [];
+    for (const preferredExt of ["json3", "srv3", "ttml", "vtt"]) {
+      const candidate = tracks.find((track) => track?.url && String(track.ext || "").toLowerCase() === preferredExt);
+      if (candidate) {
+        return candidate;
+      }
+    }
+    const fallback = tracks.find((track) => track?.url);
+    if (fallback) {
+      return fallback;
+    }
+  }
+
+  return null;
+}
+
 async function fetchTranscriptWithYtDlp(videoId, language, provider = "google") {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   return withTempDir(async (tempDir) => {
     const cookieArgs = await getYtDlpCookieArgs(tempDir);
+    try {
+      const { stdout } = await runYtDlp([
+        ...cookieArgs,
+        "--skip-download",
+        "--dump-single-json",
+        "--no-playlist",
+        "--no-warnings",
+        "--extractor-args", "youtube:player_client=android,web",
+        videoUrl
+      ]);
+      const metadata = JSON.parse(stdout || "{}");
+      const candidate = pickYtDlpSubtitleCandidate(metadata);
+      if (candidate?.url) {
+        const response = await fetch(candidate.url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 Codex Transcript App",
+            "Accept": "application/json,text/plain,text/vtt,text/xml,*/*"
+          }
+        });
+        const raw = await response.text();
+        const parsedSubtitles = parseSubtitlePayload(raw, candidate.ext || "");
+        const subtitles = await translateCues(parsedSubtitles, language, "en", provider);
+        if (subtitles.length) {
+          return {
+            source: "yt-dlp",
+            videoId,
+            selectedTrackIndex: 0,
+            trackLabel: "English / yt-dlp",
+            availableTracks: [
+              {
+                label: "English / yt-dlp",
+                languageCode: "en",
+                kind: "yt-dlp"
+              }
+            ],
+            subtitles
+          };
+        }
+      }
+    } catch (_error) {
+      // Fall through to file-based subtitle extraction.
+    }
+
     let subtitlePath = "";
 
     for (const subtitleFormat of ["json3", "srv3", "vtt"]) {
@@ -1035,12 +1183,7 @@ async function fetchTranscriptWithYtDlp(videoId, language, provider = "google") 
     }
 
     const raw = await fsp.readFile(subtitlePath, "utf8");
-    let parsedSubtitles = [];
-    if (subtitlePath.endsWith(".json3") || subtitlePath.endsWith(".srv3")) {
-      parsedSubtitles = parseCaptionEvents(JSON.parse(raw));
-    } else {
-      parsedSubtitles = parseTranscriptXml(raw);
-    }
+    const parsedSubtitles = parseSubtitlePayload(raw, path.extname(subtitlePath).replace(".", ""));
 
     const subtitles = await translateCues(parsedSubtitles, language, "en", provider);
     if (!subtitles.length) {
