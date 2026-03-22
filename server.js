@@ -1640,7 +1640,14 @@ async function serveStatic(request, requestUrl, response) {
       "ETag": etag,
       "Last-Modified": lastModified
     });
-    fs.createReadStream(targetPath).pipe(response);
+
+    if (request.method === "HEAD") {
+      response.end();
+      return;
+    }
+
+    const fileBuffer = await fsp.readFile(targetPath);
+    response.end(fileBuffer);
   } catch (error) {
     console.error(`[static] failed path=${pathname} target=${targetPath}`, error);
     sendJson(response, 404, { error: "Not found" });
