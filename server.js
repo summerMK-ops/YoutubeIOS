@@ -608,7 +608,37 @@ function uniqueVideos(items) {
   });
 }
 
+function mapInnertubeSearchResult(item) {
+  const videoId = item?.video_id || item?.id || "";
+  if (!videoId) {
+    return null;
+  }
+
+  return {
+    videoId,
+    title: item?.title?.toString?.() || "",
+    channelName: item?.author?.name?.toString?.() || item?.author?.toString?.() || "",
+    viewCountText: item?.short_view_count?.toString?.() || item?.view_count?.toString?.() || "",
+    publishedTimeText: item?.published?.toString?.() || "",
+    lengthText: item?.duration?.text || item?.length_text?.toString?.() || "",
+    thumbnail: item?.best_thumbnail?.url || item?.thumbnails?.[0]?.url || "",
+    url: `https://www.youtube.com/watch?v=${videoId}`
+  };
+}
+
 async function searchVideos(query) {
+  try {
+    const innertube = await getInnertube();
+    const search = await innertube.search(query, { type: "video" });
+    const items = Array.isArray(search?.results) ? search.results : [];
+    const mapped = uniqueVideos(items.map(mapInnertubeSearchResult).filter(Boolean)).slice(0, 20);
+    if (mapped.length) {
+      return mapped;
+    }
+  } catch (error) {
+    console.warn(`[search] innertube search failed for "${query}": ${String(error?.message || error)}`);
+  }
+
   const html = await fetchPage(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
   const data = extractAnyJsonObject(html, ["var ytInitialData = ", "window['ytInitialData'] = "]);
   if (!data) {
