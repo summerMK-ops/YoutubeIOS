@@ -1066,6 +1066,42 @@ function applySubtitleData(subtitles, statusMessage) {
   syncActiveCue(true);
 }
 
+function mergeSubtitleTranslations(currentSubtitles, translatedSubtitles) {
+  if (!Array.isArray(currentSubtitles) || !Array.isArray(translatedSubtitles) || !currentSubtitles.length) {
+    return Array.isArray(currentSubtitles) ? currentSubtitles : [];
+  }
+
+  const buildCueKey = (cue) => `${Number(cue?.start || 0).toFixed(3)}::${Number(cue?.end || 0).toFixed(3)}::${cue?.text || ""}`;
+  const translationByKey = new Map(
+    translatedSubtitles.map((cue) => [buildCueKey(cue), cue?.translation || ""])
+  );
+
+  return currentSubtitles.map((cue, index) => {
+    const indexedMatch = translatedSubtitles[index];
+    const indexedTranslation = indexedMatch
+      && indexedMatch.text === cue.text
+      && Math.abs(Number(indexedMatch.start || 0) - Number(cue.start || 0)) < 0.05
+      && Math.abs(Number(indexedMatch.end || 0) - Number(cue.end || 0)) < 0.05
+      ? indexedMatch.translation || ""
+      : "";
+    const mergedTranslation = indexedTranslation || translationByKey.get(buildCueKey(cue)) || cue.translation || "";
+    return mergedTranslation === cue.translation ? cue : { ...cue, translation: mergedTranslation };
+  });
+}
+
+function updateSubtitleTranslations(subtitles, statusMessage) {
+  const nextSubtitles = Array.isArray(subtitles) ? subtitles : [];
+  const previousActiveIndex = state.activeIndex;
+  state.subtitles = nextSubtitles;
+  const { groups, cueGroupMap } = buildCueGroups(nextSubtitles);
+  state.cueGroups = groups;
+  state.cueGroupMap = cueGroupMap;
+  state.activeIndex = previousActiveIndex >= 0 ? Math.min(previousActiveIndex, Math.max(nextSubtitles.length - 1, -1)) : -1;
+  setSubtitleStatus(statusMessage);
+  renderTranscript();
+  syncActiveCue(true);
+}
+
 function renderTranscript() {
   if (!state.subtitles.length) {
     renderEmptyState(elements.transcriptList, "字幕を読み込むと、ここにタイムスタンプ一覧が表示されます。");
@@ -1726,16 +1762,50 @@ async function loadRecommendations(videoId) {
   }
 }
 
-async function fetchTrackTranscript(videoId, trackIndex) {
+function buildTranscriptStatus(payload, language, options = {}) {
+  const subtitles = Array.isArray(payload?.subtitles) ? payload.subtitles : [];
+  const translatedCount = subtitles.filter((item) => item.translation).length;
+  const messages = [
+    `${payload.trackLabel} を読み込みました。`,
+    `${subtitles.length} 件の字幕があります。`
+  ];
+
+  if (options.translationPending) {
+    messages.push("英語字幕を先に表示しています。");
+    messages.push(`${language} の翻訳を取得しています...`);
+    return messages.join(" ");
+  }
+
+  if (options.translationFailed) {
+    messages.push("英語字幕を表示中です。");
+    messages.push(`${language} の翻訳はまだ取得できていません。`);
+    return messages.join(" ");
+  }
+
+  messages.push(translatedCount ? `${language} の翻訳を表示できます。` : `${language} の翻訳はまだありません。`);
+  return messages.join(" ");
+}
+
+async function fetchTrackTranscript(videoId, trackIndex, options = {}) {
+  const language = options.language || state.translationLanguage;
+  const provider = options.provider || state.translationProvider;
   return fetchJson(
-    `/api/transcript?videoId=${encodeURIComponent(videoId)}&lang=${encodeURIComponent(state.translationLanguage)}&provider=${encodeURIComponent(state.translationProvider)}&trackIndex=${encodeURIComponent(trackIndex)}`
+    `/api/transcript?videoId=${encodeURIComponent(videoId)}&lang=${encodeURIComponent(language)}&provider=${encodeURIComponent(provider)}&trackIndex=${encodeURIComponent(trackIndex)}`
   );
 }
 
 async function loadAutoTranscript(videoId, trackIndex = 0) {
   const requestId = ++state.transcriptRequestId;
-  setSubtitleStatus("字幕を取得しています...");
-  const payload = await fetchTrackTranscript(videoId, trackIndex);
+  const requestedLanguage = state.translationLanguage;
+  const requestedProvider = state.translationProvider;
+  const shouldFetchTranslationAfterEnglish = requestedLanguage !== "en";
+  const initialLanguage = shouldFetchTranslationAfterEnglish ? "en" : requestedLanguage;
+
+  setSubtitleStatus(shouldFetchTranslationAfterEnglish ? "英語字幕を取得しています..." : "字幕を取得しています...");
+  const payload = await fetchTrackTranscript(videoId, trackIndex, {
+    language: initialLanguage,
+    provider: requestedProvider
+  });
   if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
     return;
   }
@@ -1744,14 +1814,35 @@ async function loadAutoTranscript(videoId, trackIndex = 0) {
   setTrackOptions(payload.availableTracks || []);
   elements.subtitleTrack.value = String(state.currentTrackIndex);
 
-  const translatedCount = payload.subtitles.filter((item) => item.translation).length;
-  const status = [
-    `${payload.trackLabel} を読み込みました。`,
-    `${payload.subtitles.length} 件の字幕があります。`,
-    translatedCount ? `${state.translationLanguage} の翻訳を表示できます。` : `${state.translationLanguage} の翻訳はまだありません。`
-  ].join(" ");
+  if (!shouldFetchTranslationAfterEnglish) {
+    applySubtitleData(payload.subtitles, buildTranscriptStatus(payload, requestedLanguage));
+    return;
+  }
 
-  applySubtitleData(payload.subtitles, status);
+  applySubtitleData(payload.subtitles, buildTranscriptStatus(payload, requestedLanguage, { translationPending: true }));
+
+  try {
+    const translatedPayload = await fetchTrackTranscript(videoId, state.currentTrackIndex, {
+      language: requestedLanguage,
+      provider: requestedProvider
+    });
+    if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
+      return;
+    }
+
+    state.currentTrackIndex = Number(translatedPayload.selectedTrackIndex || state.currentTrackIndex);
+    setTrackOptions(translatedPayload.availableTracks || payload.availableTracks || []);
+    elements.subtitleTrack.value = String(state.currentTrackIndex);
+
+    const mergedSubtitles = mergeSubtitleTranslations(state.subtitles, translatedPayload.subtitles || []);
+    updateSubtitleTranslations(mergedSubtitles, buildTranscriptStatus(translatedPayload, requestedLanguage));
+  } catch (_error) {
+    if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
+      return;
+    }
+
+    setSubtitleStatus(buildTranscriptStatus(payload, requestedLanguage, { translationFailed: true }));
+  }
 }
 
 async function handleVideoSelection(item, options = {}) {
