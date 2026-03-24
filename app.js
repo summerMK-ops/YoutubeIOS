@@ -426,7 +426,33 @@ async function copyEnglishText(text, button) {
 }
 
 function openChatGptApp() {
-  window.location.href = "https://chatgpt.com/";
+  const fallbackUrl = "https://chatgpt.com/";
+  const appUrl = "chatgpt://";
+  const isIos = /iPad|iPhone|iPod/.test(window.navigator.userAgent || "");
+
+  if (!isIos) {
+    window.location.href = fallbackUrl;
+    return;
+  }
+
+  const startedAt = Date.now();
+  const fallbackTimer = window.setTimeout(() => {
+    if (Date.now() - startedAt < 1600) {
+      window.location.href = fallbackUrl;
+    }
+  }, 900);
+
+  const clearFallback = () => {
+    window.clearTimeout(fallbackTimer);
+    document.removeEventListener("visibilitychange", clearFallback);
+    window.removeEventListener("pagehide", clearFallback);
+    window.removeEventListener("blur", clearFallback);
+  };
+
+  document.addEventListener("visibilitychange", clearFallback, { once: true });
+  window.addEventListener("pagehide", clearFallback, { once: true });
+  window.addEventListener("blur", clearFallback, { once: true });
+  window.location.href = appUrl;
 }
 
 function updateSaveWordButton() {
