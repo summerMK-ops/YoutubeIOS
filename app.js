@@ -423,52 +423,8 @@ async function copyEnglishText(text, button) {
   button.dataset.resetTimer = String(timerId);
 }
 
-function buildAiSearchPrompt(text) {
-  const normalizedText = String(text || "").trim();
-  if (!normalizedText) {
-    return "";
-  }
-
-  return [
-    "この英文を中学生高校英文法で解説して。",
-    "",
-    normalizedText
-  ].join("\n");
-}
-
-function openChatGptForEnglishText(text) {
-  const prompt = buildAiSearchPrompt(text);
-  if (!prompt) {
-    return;
-  }
-
-  const openChatGpt = () => {
-    const chatGptUrl = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`;
-    window.location.href = chatGptUrl;
-  };
-
-  if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(prompt)
-      .catch(() => {})
-      .finally(openChatGpt);
-    return;
-  }
-
-  try {
-    const textarea = document.createElement("textarea");
-    textarea.value = prompt;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  } catch (_error) {
-    // Ignore clipboard failures and still try opening ChatGPT.
-  }
-
-  openChatGpt();
+function openChatGptApp() {
+  window.location.href = "https://chatgpt.com/";
 }
 
 function updateSaveWordButton() {
@@ -2240,11 +2196,11 @@ elements.copyCurrentEnglish?.addEventListener("click", async (event) => {
 });
 
 elements.aiSearchCurrentInline?.addEventListener("click", () => {
-  openChatGptForEnglishText(getActiveCue()?.text || "");
+  openChatGptApp();
 });
 
 elements.aiSearchCurrent?.addEventListener("click", () => {
-  openChatGptForEnglishText(getActiveCue()?.text || "");
+  openChatGptApp();
 });
 
 elements.saveCurrentLine?.addEventListener("click", () => {
