@@ -10,6 +10,7 @@ const ACTIVE_CUE_HOLD = 0.28;
 const DEFAULT_VIDEO_ID = "G2Yi-NQDBSM";
 const INITIAL_BOOTSTRAP_DELAY_MS = 1200;
 const INITIAL_SEARCH_QUERY = "English Vlog";
+const TRANSLATION_CHUNK_SIZE = 12;
 const PLAYBACK_STORAGE_KEY = "trancy-playback-positions";
 const FAVORITES_STORAGE_KEY = "trancy-favorites";
 const SAVED_WORDS_STORAGE_KEY = "trancy-saved-words";
@@ -1750,8 +1751,8 @@ function saveCurrentWord() {
   updateSaveWordButton();
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url);
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, options);
   const payload = await response.json();
   if (!response.ok) {
     throw new Error(payload.error || "データ取得に失敗しました。");
@@ -1850,6 +1851,77 @@ async function fetchTrackTranscript(videoId, trackIndex, options = {}) {
   );
 }
 
+async function translateCueChunk(cues, options = {}) {
+  return fetchJson("/api/translate-cues", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      cues,
+      targetLanguage: options.targetLanguage || state.translationLanguage,
+      sourceLanguage: options.sourceLanguage || "en",
+      provider: options.provider || state.translationProvider
+    })
+  });
+}
+
+function mergeTranslatedChunk(currentSubtitles, translatedChunk, startIndex) {
+  const nextSubtitles = currentSubtitles.slice();
+  translatedChunk.forEach((cue, index) => {
+    const targetIndex = startIndex + index;
+    const currentCue = nextSubtitles[targetIndex];
+    if (!currentCue) {
+      return;
+    }
+
+    nextSubtitles[targetIndex] = {
+      ...currentCue,
+      translation: cue?.translation || currentCue.translation || ""
+    };
+  });
+  return nextSubtitles;
+}
+
+async function translateSubtitlesProgressively(videoId, requestId, basePayload, options = {}) {
+  const requestedLanguage = options.language || state.translationLanguage;
+  const requestedProvider = options.provider || state.translationProvider;
+  const baseSubtitles = Array.isArray(basePayload?.subtitles) ? basePayload.subtitles : [];
+  const totalChunks = Math.ceil(baseSubtitles.length / TRANSLATION_CHUNK_SIZE);
+
+  for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
+    if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
+      return;
+    }
+
+    const startIndex = chunkIndex * TRANSLATION_CHUNK_SIZE;
+    const cues = baseSubtitles.slice(startIndex, startIndex + TRANSLATION_CHUNK_SIZE).map((cue) => ({
+      start: cue.start,
+      end: cue.end,
+      text: cue.text,
+      translation: ""
+    }));
+    const translatedPayload = await translateCueChunk(cues, {
+      targetLanguage: requestedLanguage,
+      sourceLanguage: "en",
+      provider: requestedProvider
+    });
+    if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
+      return;
+    }
+
+    const mergedSubtitles = mergeTranslatedChunk(state.subtitles, translatedPayload.subtitles || [], startIndex);
+    const hasMoreChunks = chunkIndex < totalChunks - 1;
+    state.translationPending = hasMoreChunks;
+    updateSubtitleTranslations(
+      mergedSubtitles,
+      hasMoreChunks
+        ? `${basePayload.trackLabel} を読み込みました。先頭から翻訳中です... ${Math.min(startIndex + TRANSLATION_CHUNK_SIZE, baseSubtitles.length)}/${baseSubtitles.length}`
+        : buildTranscriptStatus({ ...basePayload, subtitles: mergedSubtitles }, requestedLanguage)
+    );
+  }
+}
+
 async function loadAutoTranscript(videoId, trackIndex = 0) {
   const requestId = ++state.transcriptRequestId;
   const requestedLanguage = state.translationLanguage;
@@ -1880,21 +1952,10 @@ async function loadAutoTranscript(videoId, trackIndex = 0) {
   applySubtitleData(payload.subtitles, buildTranscriptStatus(payload, requestedLanguage, { translationPending: true }));
 
   try {
-    const translatedPayload = await fetchTrackTranscript(videoId, state.currentTrackIndex, {
+    await translateSubtitlesProgressively(videoId, requestId, payload, {
       language: requestedLanguage,
       provider: requestedProvider
     });
-    if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
-      return;
-    }
-
-    state.currentTrackIndex = Number(translatedPayload.selectedTrackIndex || state.currentTrackIndex);
-    setTrackOptions(translatedPayload.availableTracks || payload.availableTracks || []);
-    elements.subtitleTrack.value = String(state.currentTrackIndex);
-
-    const mergedSubtitles = mergeSubtitleTranslations(state.subtitles, translatedPayload.subtitles || []);
-    state.translationPending = false;
-    updateSubtitleTranslations(mergedSubtitles, buildTranscriptStatus(translatedPayload, requestedLanguage));
   } catch (_error) {
     if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
       return;

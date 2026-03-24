@@ -68,6 +68,25 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
+function readJsonBody(request) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+
+    request.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+    request.on("end", () => {
+      try {
+        const raw = Buffer.concat(chunks).toString("utf8").trim();
+        resolve(raw ? JSON.parse(raw) : {});
+      } catch (error) {
+        reject(error);
+      }
+    });
+    request.on("error", reject);
+  });
+}
+
 function createStaticEtag(stat) {
   return `"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
 }
@@ -2005,6 +2024,40 @@ async function handleTranscriptApi(requestUrl, response) {
   }
 }
 
+async function handleTranslateCuesApi(request, response) {
+  try {
+    const body = await readJsonBody(request);
+    const targetLanguage = String(body?.targetLanguage || "").trim();
+    const sourceLanguage = String(body?.sourceLanguage || "").trim();
+    const provider = String(body?.provider || "google").trim() || "google";
+    const cues = Array.isArray(body?.cues) ? body.cues : [];
+
+    if (!targetLanguage) {
+      sendJson(response, 400, { error: "targetLanguage is required." });
+      return;
+    }
+
+    const normalizedCues = cues.map((cue) => ({
+      start: Number(cue?.start || 0),
+      end: Number(cue?.end || 0),
+      text: normalizeCueText(cue?.text || ""),
+      translation: normalizeCueText(cue?.translation || "")
+    })).filter((cue) => cue.text);
+
+    if (!normalizedCues.length) {
+      sendJson(response, 200, { subtitles: [] });
+      return;
+    }
+
+    const subtitles = await translateCues(normalizedCues, targetLanguage, sourceLanguage, provider);
+    sendJson(response, 200, { subtitles });
+  } catch (error) {
+    sendJson(response, 500, {
+      error: error.message || "Failed to translate subtitle chunk."
+    });
+  }
+}
+
 const server = http.createServer(async (request, response) => {
   const requestUrl = new URL(request.url, `http://${request.headers.host}`);
 
@@ -2020,6 +2073,11 @@ const server = http.createServer(async (request, response) => {
 
   if (requestUrl.pathname === "/api/transcript") {
     await handleTranscriptApi(requestUrl, response);
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/translate-cues" && request.method === "POST") {
+    await handleTranslateCuesApi(request, response);
     return;
   }
 
