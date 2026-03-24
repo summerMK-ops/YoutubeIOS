@@ -400,6 +400,15 @@ select {
   border-color: rgba(255, 215, 106, 0.34);
 }
 
+.current-subtitle-action-ai {
+  width: auto;
+  min-width: 46px;
+  padding: 0 10px;
+  font-size: 0.76rem;
+  color: #7df6ff;
+  border-color: rgba(125, 246, 255, 0.32);
+}
+
 .current-copy-cache {
   display: none;
 }
@@ -497,6 +506,12 @@ select {
   border-radius: 14px;
   font-size: 0.88rem;
   font-weight: 800;
+}
+
+.compact-ai-button {
+  min-width: 74px;
+  color: #7df6ff;
+  border-color: rgba(125, 246, 255, 0.32);
 }
 
 .compact-speed-control {
@@ -1453,6 +1468,13 @@ select {
     font-size: 0.82rem;
   }
 
+  .current-subtitle-action-ai {
+    width: auto;
+    min-width: 40px;
+    padding: 0 8px;
+    font-size: 0.66rem;
+  }
+
   .current-line {
     padding-right: 64px;
     font-size: 1.04rem;
@@ -1508,6 +1530,11 @@ select {
     padding: 0 4px;
     border-radius: 8px;
     font-size: 0.62rem;
+  }
+
+  .compact-ai-button {
+    min-width: 52px;
+    padding: 0 6px;
   }
 
   .compact-speed-control {

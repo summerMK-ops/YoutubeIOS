@@ -153,6 +153,7 @@ const elements = {
   currentCueTime: document.getElementById("current-cue-time"),
   currentOriginal: document.getElementById("current-original"),
   currentTranslation: document.getElementById("current-translation"),
+  aiSearchCurrentInline: document.getElementById("ai-search-current-inline"),
   copyCurrentEnglish: document.getElementById("copy-current-english"),
   saveCurrentLine: document.getElementById("save-current-line"),
   currentTimeLabel: document.getElementById("current-time-label"),
@@ -182,6 +183,7 @@ const elements = {
   saveWord: document.getElementById("save-word"),
   videoTitle: document.getElementById("video-title"),
   videoMeta: document.getElementById("video-meta"),
+  aiSearchCurrent: document.getElementById("ai-search-current"),
   toggleFavorite: document.getElementById("toggle-favorite"),
   playbackRate: document.getElementById("playback-rate"),
   seekBack10: document.getElementById("seek-back-10"),
@@ -419,6 +421,54 @@ async function copyEnglishText(text, button) {
     button.textContent = originalLabel;
   }, 1400);
   button.dataset.resetTimer = String(timerId);
+}
+
+function buildAiSearchPrompt(text) {
+  const normalizedText = String(text || "").trim();
+  if (!normalizedText) {
+    return "";
+  }
+
+  return [
+    "この英文を中学生高校英文法で解説して。",
+    "",
+    normalizedText
+  ].join("\n");
+}
+
+function openChatGptForEnglishText(text) {
+  const prompt = buildAiSearchPrompt(text);
+  if (!prompt) {
+    return;
+  }
+
+  const openChatGpt = () => {
+    const chatGptUrl = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`;
+    window.location.href = chatGptUrl;
+  };
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(prompt)
+      .catch(() => {})
+      .finally(openChatGpt);
+    return;
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = prompt;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  } catch (_error) {
+    // Ignore clipboard failures and still try opening ChatGPT.
+  }
+
+  openChatGpt();
 }
 
 function updateSaveWordButton() {
@@ -2187,6 +2237,14 @@ elements.panelBackdrop?.addEventListener("click", () => {
 elements.copyCurrentEnglish?.addEventListener("click", async (event) => {
   const cue = getActiveCue();
   await copyEnglishText(cue?.text || "", event.currentTarget);
+});
+
+elements.aiSearchCurrentInline?.addEventListener("click", () => {
+  openChatGptForEnglishText(getActiveCue()?.text || "");
+});
+
+elements.aiSearchCurrent?.addEventListener("click", () => {
+  openChatGptForEnglishText(getActiveCue()?.text || "");
 });
 
 elements.saveCurrentLine?.addEventListener("click", () => {
