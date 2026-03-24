@@ -112,7 +112,7 @@
         <label class="field">
           <span>Search Query</span>
           <div class="inline-input">
-            <input id="search-query" type="text" placeholder="English Vlog">
+            <input id="search-query" type="text" placeholder="">
             <button id="search-button" class="primary" type="button">Search</button>
           </div>
         </label>
@@ -259,7 +259,10 @@
         <h3 id="dictionary-word">Word</h3>
         <button id="dictionary-close" class="ghost icon-button icon-button-small" type="button">Close</button>
       </div>
-      <p id="dictionary-phonetic" class="dictionary-phonetic"></p>
+      <div class="dictionary-pronunciation-row">
+        <button id="dictionary-play-audio" class="ghost dictionary-audio-button" type="button" aria-label="Play pronunciation">&#128266;</button>
+        <p id="dictionary-phonetic" class="dictionary-phonetic"></p>
+      </div>
       <div id="dictionary-body" class="dictionary-body">Dictionary details will appear here.</div>
       <button id="save-word" class="primary save-word-button" type="button">Save Word</button>
     </div>

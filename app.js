@@ -178,6 +178,7 @@ const elements = {
   dictionaryBackdrop: document.getElementById("dictionary-backdrop"),
   dictionaryPopup: document.getElementById("dictionary-popup"),
   dictionaryClose: document.getElementById("dictionary-close"),
+  dictionaryPlayAudio: document.getElementById("dictionary-play-audio"),
   dictionaryWord: document.getElementById("dictionary-word"),
   dictionaryPhonetic: document.getElementById("dictionary-phonetic"),
   dictionaryBody: document.getElementById("dictionary-body"),
@@ -1576,12 +1577,27 @@ function playDictionaryAudio(entry) {
 
 function renderDictionaryEntry(entry) {
   const parts = [];
+  const meanings = Array.isArray(entry.meanings) ? entry.meanings : [];
   if (entry.wordTranslation) {
     parts.push(`<p class="dictionary-translation">${escapeHtml(entry.wordTranslation)}</p>`);
   }
 
-  if (Array.isArray(entry.meanings) && entry.meanings.length) {
-    parts.push(entry.meanings.map((meaning) => {
+  if (meanings.length) {
+    parts.push(`
+      <div class="dictionary-meaning-list">
+        ${meanings.map((meaning) => {
+          const definitions = Array.isArray(meaning.definitions) ? meaning.definitions : [];
+          const firstDefinition = definitions.find((definition) => (definition?.ja || definition?.en)) || {};
+          return `
+            <div class="dictionary-meaning-line">
+              <span class="dictionary-part-label">${escapeHtml(meaning.partOfSpeech || "")}.</span>
+              <span class="dictionary-meaning-text">${escapeHtml(firstDefinition.ja || firstDefinition.en || "")}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `);
+    parts.push(meanings.map((meaning) => {
       const definitions = Array.isArray(meaning.definitions) ? meaning.definitions.slice(0, 2) : [];
       const defs = definitions.map((definition) => `
         <div class="dictionary-definition">
@@ -1589,6 +1605,9 @@ function renderDictionaryEntry(entry) {
           <p class="dictionary-definition-ja">${escapeHtml(definition.ja || "")}</p>
         </div>
       `).join("");
+      if (!defs) {
+        return "";
+      }
       return `
         <section class="dictionary-meaning">
           <p class="dictionary-part">${escapeHtml(meaning.partOfSpeech || "")}</p>
@@ -2218,6 +2237,12 @@ elements.saveCurrentLine?.addEventListener("click", () => {
 
 elements.dictionaryClose?.addEventListener("click", () => {
   closeDictionaryPopup();
+});
+
+elements.dictionaryPlayAudio?.addEventListener("click", () => {
+  if (state.dictionaryEntry) {
+    playDictionaryAudio(state.dictionaryEntry);
+  }
 });
 
 elements.saveWord?.addEventListener("click", () => {
