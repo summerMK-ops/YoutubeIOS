@@ -7,9 +7,9 @@ const sampleSubtitles = [
 const PUNCTUATION_END_RE = /([.?!]+|[。！？]+)["')\]]*$/;
 const ACTIVE_CUE_LOOKAHEAD = 0.2;
 const ACTIVE_CUE_HOLD = 0.28;
-const DEFAULT_VIDEO_ID = "gLdgEYAxJ8A";
+const DEFAULT_VIDEO_ID = "G2Yi-NQDBSM";
 const INITIAL_BOOTSTRAP_DELAY_MS = 1200;
-const INITIAL_SEARCH_QUERY = "english vlog";
+const INITIAL_SEARCH_QUERY = "English Vlog";
 const PLAYBACK_STORAGE_KEY = "trancy-playback-positions";
 const FAVORITES_STORAGE_KEY = "trancy-favorites";
 const SAVED_WORDS_STORAGE_KEY = "trancy-saved-words";
@@ -35,6 +35,7 @@ const state = {
   currentTrackIndex: 0,
   translationLanguage: "ja",
   translationProvider: "google",
+  translationPending: false,
   fontSizeMode: "small",
   activePopover: null,
   pendingResumeTime: 0,
@@ -1072,6 +1073,10 @@ function applySubtitleData(subtitles, statusMessage) {
   syncActiveCue(true);
 }
 
+function getTranslationPlaceholder() {
+  return state.translationPending ? "翻訳を読み込み中..." : "翻訳はありません";
+}
+
 function mergeSubtitleTranslations(currentSubtitles, translatedSubtitles) {
   if (!Array.isArray(currentSubtitles) || !Array.isArray(translatedSubtitles) || !currentSubtitles.length) {
     return Array.isArray(currentSubtitles) ? currentSubtitles : [];
@@ -1136,7 +1141,7 @@ function renderTranscript() {
           </div>
         </div>
         <p class="cue-original">${renderWordMarkup(cue.text)}</p>
-        <p class="cue-translation">${escapeHtml(cue.translation || "翻訳はありません")}</p>
+        <p class="cue-translation">${escapeHtml(cue.translation || getTranslationPlaceholder())}</p>
       </article>
     `;
   }).join("");
@@ -1327,7 +1332,7 @@ function updateActiveCue(index, forceScroll = false) {
   }
 
   elements.currentOriginal.innerHTML = renderWordMarkup(cue.text);
-  elements.currentTranslation.textContent = cue.translation || "翻訳はありません。";
+  elements.currentTranslation.textContent = cue.translation || getTranslationPlaceholder();
   bindWordLookup(elements.currentOriginal, cue.text);
 
   const activeNode = elements.transcriptList.querySelector(`[data-index="${index}"]`);
@@ -1806,6 +1811,7 @@ async function loadAutoTranscript(videoId, trackIndex = 0) {
   const requestedProvider = state.translationProvider;
   const shouldFetchTranslationAfterEnglish = requestedLanguage !== "en";
   const initialLanguage = shouldFetchTranslationAfterEnglish ? "en" : requestedLanguage;
+  state.translationPending = shouldFetchTranslationAfterEnglish;
 
   setSubtitleStatus(shouldFetchTranslationAfterEnglish ? "英語字幕を取得しています..." : "字幕を取得しています...");
   const payload = await fetchTrackTranscript(videoId, trackIndex, {
@@ -1821,6 +1827,7 @@ async function loadAutoTranscript(videoId, trackIndex = 0) {
   elements.subtitleTrack.value = String(state.currentTrackIndex);
 
   if (!shouldFetchTranslationAfterEnglish) {
+    state.translationPending = false;
     applySubtitleData(payload.subtitles, buildTranscriptStatus(payload, requestedLanguage));
     return;
   }
@@ -1841,12 +1848,14 @@ async function loadAutoTranscript(videoId, trackIndex = 0) {
     elements.subtitleTrack.value = String(state.currentTrackIndex);
 
     const mergedSubtitles = mergeSubtitleTranslations(state.subtitles, translatedPayload.subtitles || []);
+    state.translationPending = false;
     updateSubtitleTranslations(mergedSubtitles, buildTranscriptStatus(translatedPayload, requestedLanguage));
   } catch (_error) {
     if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
       return;
     }
 
+    state.translationPending = false;
     setSubtitleStatus(buildTranscriptStatus(payload, requestedLanguage, { translationFailed: true }));
   }
 }
@@ -2586,4 +2595,4 @@ updateSaveCurrentLineButton();
 updateRepeatButtons();
 startInitialBootstrap();
 elements.urlInput.value = `https://www.youtube.com/watch?v=${getInitialVideoMeta().videoId || DEFAULT_VIDEO_ID}`;
-elements.searchQuery.value = INITIAL_SEARCH_QUERY;
+elements.searchQuery.value = "";
