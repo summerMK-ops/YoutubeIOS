@@ -707,6 +707,32 @@ function uniqueVideos(items) {
   });
 }
 
+function parseViewCountText(value) {
+  const raw = String(value || "").toLowerCase().replaceAll(",", "").trim();
+  if (!raw) {
+    return 0;
+  }
+
+  const japaneseMatch = raw.match(/([\d.]+)\s*(万|億|千)/);
+  if (japaneseMatch) {
+    const amount = Number(japaneseMatch[1] || 0);
+    const unit = japaneseMatch[2];
+    const multiplier = unit === "億" ? 100000000 : unit === "万" ? 10000 : 1000;
+    return Math.round(amount * multiplier);
+  }
+
+  const suffixMatch = raw.match(/([\d.]+)\s*([kmb])/);
+  if (suffixMatch) {
+    const amount = Number(suffixMatch[1] || 0);
+    const unit = suffixMatch[2];
+    const multiplier = unit === "b" ? 1000000000 : unit === "m" ? 1000000 : 1000;
+    return Math.round(amount * multiplier);
+  }
+
+  const plainNumber = raw.match(/(\d+)/);
+  return plainNumber ? Number(plainNumber[1]) : 0;
+}
+
 function mapInnertubeSearchResult(item) {
   const videoId = item?.video_id || item?.id || "";
   if (!videoId) {
@@ -795,6 +821,10 @@ async function fetchChannelVideos(videoId, sort = "latest") {
   const items = uniqueVideos(renderers.map(mapVideoRenderer).filter(Boolean))
     .filter((item) => item.videoId !== videoId)
     .slice(0, 30);
+
+  if (sort === "popular") {
+    items.sort((left, right) => parseViewCountText(right.viewCountText) - parseViewCountText(left.viewCountText));
+  }
 
   return {
     channelId,

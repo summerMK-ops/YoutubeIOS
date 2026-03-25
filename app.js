@@ -1192,7 +1192,10 @@ function renderTranscript() {
           <div class="cue-time">${formatTime(cue.start)} - ${formatTime(cue.end)}</div>
           <div class="cue-action-group">
             <button class="ghost cue-save-symbol ${isLineSaved(cue) ? "is-active" : ""}" type="button" data-save-index="${index}" aria-label="Save highlighted English line">${isLineSaved(cue) ? "★" : "✦"}</button>
-            <button class="ghost cue-copy-symbol" type="button" data-copy-index="${index}" aria-label="Copy highlighted English line" data-label-default="⧉" data-feedback-label="✓">⧉</button>
+            <div class="cue-copy-stack">
+              <button class="ghost cue-copy-symbol" type="button" data-copy-index="${index}" aria-label="Copy highlighted English line" data-label-default="⧉" data-feedback-label="✓">⧉</button>
+              <button class="ghost cue-group-copy-symbol" type="button" data-copy-group-index="${index}" aria-label="Copy current sentence group" data-label-default="¶" data-feedback-label="✓">¶</button>
+            </div>
           </div>
         </div>
         <p class="cue-original">${renderWordMarkup(cue.text)}</p>
@@ -1233,6 +1236,17 @@ function renderTranscript() {
       event.stopPropagation();
       const cue = state.subtitles[Number(node.dataset.copyIndex || -1)];
       await copyEnglishText(cue?.text || "", node);
+    });
+  });
+
+  elements.transcriptList.querySelectorAll(".cue-group-copy-symbol").forEach((node) => {
+    node.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      const index = Number(node.dataset.copyGroupIndex || -1);
+      const groupIndex = state.cueGroupMap[index];
+      const group = state.cueGroups[groupIndex];
+      const text = group?.cueIndexes?.map((cueIndex) => state.subtitles[cueIndex]?.text || "").filter(Boolean).join(" ") || "";
+      await copyEnglishText(text, node);
     });
   });
 
