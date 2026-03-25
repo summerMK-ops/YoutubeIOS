@@ -1512,6 +1512,8 @@ select {
     gap: 4px;
     padding-top: 4px;
     padding-bottom: 4px;
+    position: relative;
+    z-index: 61;
   }
 
   .current-subtitle-box {
@@ -1644,6 +1646,26 @@ select {
   .search-panel {
     padding-top: 6px;
     padding-bottom: calc(env(safe-area-inset-bottom, 0) + 32px);
+    position: relative;
+    z-index: 61;
+  }
+
+  .compact-load-field,
+  .search-panel .field,
+  .compact-load-field .inline-input,
+  .search-panel .inline-input {
+    position: relative;
+    z-index: 62;
+  }
+
+  .compact-load-field input[type="text"],
+  .search-panel input[type="text"] {
+    position: relative;
+    z-index: 63;
+    pointer-events: auto;
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
   }
 
   .search-panel .section-title p,
@@ -1745,5 +1767,15 @@ select {
 
   .search-panel {
     padding-bottom: calc(env(safe-area-inset-bottom, 0) + 44px);
+  }
+
+  .control-panel,
+  .search-panel {
+    z-index: 64;
+  }
+
+  .compact-load-field input[type="text"],
+  .search-panel input[type="text"] {
+    z-index: 65;
   }
 }
