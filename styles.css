@@ -1357,7 +1357,7 @@ select {
 
 @media (max-width: 860px) {
   body {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0) + 70px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0) + 108px);
   }
 
   .app-shell {
@@ -1366,6 +1366,7 @@ select {
 
   .workspace {
     gap: 4px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0) + 84px);
   }
 
   .panel {
@@ -1642,6 +1643,7 @@ select {
 
   .search-panel {
     padding-top: 6px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0) + 32px);
   }
 
   .search-panel .section-title p,
@@ -1700,6 +1702,7 @@ select {
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
     z-index: 60;
+    pointer-events: none;
   }
 
   .bottom-nav-button {
@@ -1714,6 +1717,7 @@ select {
     justify-content: center;
     font-size: 1rem;
     font-weight: 800;
+    pointer-events: auto;
   }
 
   .dictionary-popup {
@@ -1727,5 +1731,19 @@ select {
   .dictionary-meaning-line {
     font-size: 0.95rem;
     gap: 8px;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 860px) {
+  body {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0) + 120px);
+  }
+
+  .workspace {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0) + 100px);
+  }
+
+  .search-panel {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0) + 44px);
   }
 }
