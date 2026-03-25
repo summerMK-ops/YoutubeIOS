@@ -1805,26 +1805,10 @@ function shouldHydrateVideoMeta(item) {
 }
 
 async function hydrateVideoMeta(item, videoId) {
-  if (!videoId || !shouldHydrateVideoMeta(item)) {
-    return {
-      ...item,
-      videoId
-    };
-  }
-
-  try {
-    const payload = await fetchJson(`/api/video-meta?videoId=${encodeURIComponent(videoId)}`);
-    return {
-      ...item,
-      ...payload,
-      videoId
-    };
-  } catch (_error) {
-    return {
-      ...item,
-      videoId
-    };
-  }
+  return {
+    ...item,
+    videoId
+  };
 }
 
 function renderVideoList(target, items, onSelect) {
