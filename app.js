@@ -402,38 +402,21 @@ function getActiveCue() {
   return state.activeIndex >= 0 ? state.subtitles[state.activeIndex] || null : null;
 }
 
-function getCueTextUntilBoundary(startIndex) {
-  if (!Number.isInteger(startIndex) || startIndex < 0 || startIndex >= state.subtitles.length) {
-    return "";
-  }
-
-  const parts = [];
-  const boundaryRe = /[.?!。！？]/;
-
-  for (let index = startIndex; index < state.subtitles.length; index += 1) {
-    const text = String(state.subtitles[index]?.text || "").trim();
-    if (!text) {
-      continue;
-    }
-
-    const boundaryIndex = text.search(boundaryRe);
-    if (boundaryIndex >= 0) {
-      parts.push(text.slice(0, boundaryIndex + 1).trim());
-      break;
-    }
-
-    parts.push(text);
-  }
-
-  return parts.join(" ").trim();
-}
-
 function getActiveCueGroupText() {
   if (state.activeIndex < 0) {
     return "";
   }
 
-  return getCueTextUntilBoundary(state.activeIndex);
+  const groupIndex = state.cueGroupMap[state.activeIndex];
+  const group = state.cueGroups[groupIndex];
+  if (!group?.cueIndexes?.length) {
+    return getActiveCue()?.text || "";
+  }
+
+  return group.cueIndexes
+    .map((index) => state.subtitles[index]?.text || "")
+    .filter(Boolean)
+    .join(" ");
 }
 
 async function copyEnglishText(text, button) {
@@ -1258,7 +1241,9 @@ function renderTranscript() {
     node.addEventListener("click", async (event) => {
       event.stopPropagation();
       const index = Number(node.dataset.copyGroupIndex || -1);
-      const text = getCueTextUntilBoundary(index);
+      const groupIndex = state.cueGroupMap[index];
+      const group = state.cueGroups[groupIndex];
+      const text = group?.cueIndexes?.map((cueIndex) => state.subtitles[cueIndex]?.text || "").filter(Boolean).join(" ") || "";
       await copyEnglishText(text, node);
     });
   });
