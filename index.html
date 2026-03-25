@@ -50,7 +50,10 @@
           <div class="current-subtitle-actions">
             <button id="ai-search-current-inline" class="ghost current-subtitle-action current-subtitle-action-ai" type="button" aria-label="Open ChatGPT">AI</button>
             <button id="save-current-line" class="ghost current-subtitle-action current-subtitle-action-save" type="button" aria-label="Save current English line">&#10022;</button>
-            <button id="copy-current-english" class="ghost current-subtitle-action" type="button" aria-label="Copy current English line" data-label-default="&#x29C9;" data-feedback-label="&#10003;">&#x29C9;</button>
+            <div class="current-subtitle-copy-stack">
+              <button id="copy-current-english" class="ghost current-subtitle-action" type="button" aria-label="Copy current English line" data-label-default="&#x29C9;" data-feedback-label="&#10003;">&#x29C9;</button>
+              <button id="copy-current-group" class="ghost current-subtitle-action current-subtitle-action-group-copy" type="button" aria-label="Copy current sentence group" data-label-default="&#182;" data-feedback-label="&#10003;">&#182;</button>
+            </div>
           </div>
           <p id="current-original" class="current-line">No subtitles yet.</p>
           <p id="current-translation" class="current-translation">Translation will appear here.</p>
@@ -76,6 +79,7 @@
 
         <div class="player-secondary-controls compact-secondary-controls">
           <button id="ai-search-current" class="ghost compact-icon-button compact-ai-button" type="button" aria-label="Open ChatGPT">AI検索</button>
+          <button id="channel-videos-toggle" class="ghost compact-icon-button" type="button" aria-label="Open current channel videos">CH</button>
           <button id="toggle-favorite" class="ghost compact-icon-button" type="button" aria-label="Favorite">&#9825;</button>
           <button id="repeat-current-cue" class="ghost compact-icon-button" type="button" aria-label="Repeat current cue">1x</button>
           <button id="repeat-current-group" class="ghost compact-icon-button" type="button" aria-label="Repeat sentence">AB</button>
@@ -176,6 +180,26 @@
         <button id="history-close" class="ghost icon-button icon-button-small" type="button">Close</button>
       </div>
       <div id="history-list" class="favorites-list"></div>
+    </div>
+
+    <div id="channel-panel" class="side-popover hidden">
+      <div class="side-popover-header">
+        <div>
+          <h3>Channel Videos</h3>
+          <p id="channel-videos-status" class="panel-status">この動画のチャンネル一覧を表示します。</p>
+        </div>
+        <button id="channel-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+      </div>
+      <div class="channel-toolbar">
+        <label class="field channel-sort-field">
+          <span>並び順</span>
+          <select id="channel-sort">
+            <option value="latest">最新動画順</option>
+            <option value="popular">人気順</option>
+          </select>
+        </label>
+      </div>
+      <div id="channel-videos-list" class="favorites-list"></div>
     </div>
 
     <div id="saved-lines-panel" class="side-popover hidden">

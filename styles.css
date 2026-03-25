@@ -381,6 +381,12 @@ select {
   gap: 8px;
 }
 
+.current-subtitle-copy-stack {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .current-subtitle-action {
   width: 34px;
   min-width: 34px;
@@ -407,6 +413,11 @@ select {
   font-size: 0.76rem;
   color: #7df6ff;
   border-color: rgba(125, 246, 255, 0.32);
+}
+
+.current-subtitle-action-group-copy {
+  color: #a9f0c7;
+  border-color: rgba(169, 240, 199, 0.3);
 }
 
 .current-copy-cache {
@@ -946,6 +957,14 @@ select {
 .side-popover-header h3 {
   margin: 0;
   font-size: 1.02rem;
+}
+
+.channel-toolbar {
+  margin-bottom: 12px;
+}
+
+.channel-sort-field {
+  max-width: 220px;
 }
 
 .settings-toggles {
@@ -1505,6 +1524,10 @@ select {
   .current-subtitle-actions {
     top: 0;
     gap: 6px;
+  }
+
+  .current-subtitle-copy-stack {
+    gap: 4px;
   }
 
   .current-subtitle-action {

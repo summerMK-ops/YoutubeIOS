@@ -774,6 +774,36 @@ async function fetchRecommendations(videoId) {
   return fallbackItems.filter((item) => item.videoId !== videoId).slice(0, 16);
 }
 
+async function fetchChannelVideos(videoId, sort = "latest") {
+  const html = await fetchPage(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`);
+  const playerResponse = extractJsonObjectAfterMarker(html, "var ytInitialPlayerResponse = ");
+  const channelId = playerResponse?.videoDetails?.channelId || "";
+  const channelName = playerResponse?.videoDetails?.author || "";
+
+  if (!channelId) {
+    throw new Error("チャンネル情報を取得できませんでした。");
+  }
+
+  const sortCode = sort === "popular" ? "p" : "dd";
+  const channelHtml = await fetchPage(`https://www.youtube.com/channel/${encodeURIComponent(channelId)}/videos?view=0&sort=${sortCode}&flow=grid`);
+  const data = extractAnyJsonObject(channelHtml, ["var ytInitialData = ", "window['ytInitialData'] = "]);
+  if (!data) {
+    throw new Error("チャンネル動画一覧を解析できませんでした。");
+  }
+
+  const renderers = walkForKey(data, "videoRenderer");
+  const items = uniqueVideos(renderers.map(mapVideoRenderer).filter(Boolean))
+    .filter((item) => item.videoId !== videoId)
+    .slice(0, 30);
+
+  return {
+    channelId,
+    channelName,
+    sort,
+    items
+  };
+}
+
 async function fetchCaptionTracksFromYoutubei(videoId, client) {
   const innertube = await getInnertube();
   const info = await innertube.getBasicInfo(videoId, { client });
@@ -2058,6 +2088,25 @@ async function handleTranslateCuesApi(request, response) {
   }
 }
 
+async function handleChannelVideosApi(requestUrl, response) {
+  const videoId = extractVideoId(requestUrl.searchParams.get("videoId"));
+  const sort = requestUrl.searchParams.get("sort") === "popular" ? "popular" : "latest";
+
+  if (!videoId) {
+    sendJson(response, 400, { error: "有効な videoId を指定してください。" });
+    return;
+  }
+
+  try {
+    const payload = await fetchChannelVideos(videoId, sort);
+    sendJson(response, 200, payload);
+  } catch (error) {
+    sendJson(response, 500, {
+      error: error.message || "チャンネル動画の取得に失敗しました。"
+    });
+  }
+}
+
 const server = http.createServer(async (request, response) => {
   const requestUrl = new URL(request.url, `http://${request.headers.host}`);
 
@@ -2068,6 +2117,11 @@ const server = http.createServer(async (request, response) => {
 
   if (requestUrl.pathname === "/api/recommendations") {
     await handleRecommendationsApi(requestUrl, response);
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/channel-videos") {
+    await handleChannelVideosApi(requestUrl, response);
     return;
   }
 

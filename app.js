@@ -45,6 +45,8 @@ const state = {
   savedWords: [],
   savedLines: [],
   history: [],
+  channelVideos: [],
+  channelVideosSort: "latest",
   searchResults: [],
   recommendations: [],
   selectedVideoMeta: null,
@@ -141,6 +143,12 @@ const elements = {
   favoritesPanel: document.getElementById("favorites-panel"),
   historyClose: document.getElementById("history-close"),
   historyPanel: document.getElementById("history-panel"),
+  channelVideosToggle: document.getElementById("channel-videos-toggle"),
+  channelClose: document.getElementById("channel-close"),
+  channelPanel: document.getElementById("channel-panel"),
+  channelSort: document.getElementById("channel-sort"),
+  channelVideosStatus: document.getElementById("channel-videos-status"),
+  channelVideosList: document.getElementById("channel-videos-list"),
   savedLinesToggle: document.getElementById("saved-lines-toggle"),
   savedLinesClose: document.getElementById("saved-lines-close"),
   savedLinesPanel: document.getElementById("saved-lines-panel"),
@@ -157,6 +165,7 @@ const elements = {
   currentTranslation: document.getElementById("current-translation"),
   aiSearchCurrentInline: document.getElementById("ai-search-current-inline"),
   copyCurrentEnglish: document.getElementById("copy-current-english"),
+  copyCurrentGroup: document.getElementById("copy-current-group"),
   saveCurrentLine: document.getElementById("save-current-line"),
   currentTimeLabel: document.getElementById("current-time-label"),
   durationLabel: document.getElementById("duration-label"),
@@ -391,6 +400,23 @@ function isLineSaved(cue) {
 
 function getActiveCue() {
   return state.activeIndex >= 0 ? state.subtitles[state.activeIndex] || null : null;
+}
+
+function getActiveCueGroupText() {
+  if (state.activeIndex < 0) {
+    return "";
+  }
+
+  const groupIndex = state.cueGroupMap[state.activeIndex];
+  const group = state.cueGroups[groupIndex];
+  if (!group?.cueIndexes?.length) {
+    return getActiveCue()?.text || "";
+  }
+
+  return group.cueIndexes
+    .map((index) => state.subtitles[index]?.text || "")
+    .filter(Boolean)
+    .join(" ");
 }
 
 async function copyEnglishText(text, button) {
@@ -720,6 +746,7 @@ function setPopoverOpen(name, open) {
     ["settings", elements.settingsPanel, elements.navSettings || elements.settingsToggle],
     ["favorites", elements.favoritesPanel, elements.navFavorites || elements.favoritesToggle],
     ["history", elements.historyPanel, elements.navHistory],
+    ["channel-videos", elements.channelPanel, elements.channelVideosToggle],
     ["saved-lines", elements.savedLinesPanel, elements.navLines || elements.savedLinesToggle],
     ["words", elements.wordsPanel, elements.navWords || elements.wordsToggle]
   ];
@@ -1922,6 +1949,26 @@ async function translateSubtitlesProgressively(videoId, requestId, basePayload, 
   }
 }
 
+async function loadChannelVideos(sort = state.channelVideosSort) {
+  if (!state.currentVideoId || !elements.channelVideosList || !elements.channelVideosStatus) {
+    return;
+  }
+
+  state.channelVideosSort = sort;
+  elements.channelVideosStatus.textContent = "チャンネル動画を読み込み中です...";
+  const payload = await fetchJson(`/api/channel-videos?videoId=${encodeURIComponent(state.currentVideoId)}&sort=${encodeURIComponent(sort)}`);
+  state.channelVideos = payload.items || [];
+
+  if (!state.channelVideos.length) {
+    elements.channelVideosStatus.textContent = `${payload.channelName || "このチャンネル"} の動画は見つかりませんでした。`;
+    renderEmptyState(elements.channelVideosList, "チャンネル動画を表示できませんでした。");
+    return;
+  }
+
+  elements.channelVideosStatus.textContent = `${payload.channelName || "このチャンネル"} の動画を ${sort === "popular" ? "人気順" : "最新順"} で表示しています。`;
+  renderVideoList(elements.channelVideosList, state.channelVideos, handleVideoSelection);
+}
+
 async function loadAutoTranscript(videoId, trackIndex = 0) {
   const requestId = ++state.transcriptRequestId;
   const requestedLanguage = state.translationLanguage;
@@ -2022,6 +2069,9 @@ async function handleVideoSelection(item, options = {}) {
   }
 
   loadRecommendations(videoId);
+  if (state.activePopover === "channel-videos") {
+    loadChannelVideos(state.channelVideosSort).catch(() => {});
+  }
 
   if (state.autoFetch) {
     try {
@@ -2173,6 +2223,31 @@ elements.historyClose?.addEventListener("click", () => {
   setPopoverOpen("history", false);
 });
 
+elements.channelVideosToggle?.addEventListener("click", () => {
+  const shouldOpen = state.activePopover !== "channel-videos";
+  setPopoverOpen("channel-videos", shouldOpen);
+  if (shouldOpen) {
+    loadChannelVideos(elements.channelSort?.value || state.channelVideosSort).catch((error) => {
+      elements.channelVideosStatus.textContent = error.message || "チャンネル動画の取得に失敗しました。";
+      renderEmptyState(elements.channelVideosList, "チャンネル動画を読み込めませんでした。");
+    });
+  }
+});
+
+elements.channelClose?.addEventListener("click", () => {
+  setPopoverOpen("channel-videos", false);
+});
+
+elements.channelSort?.addEventListener("change", (event) => {
+  state.channelVideosSort = event.target.value;
+  if (state.activePopover === "channel-videos") {
+    loadChannelVideos(state.channelVideosSort).catch((error) => {
+      elements.channelVideosStatus.textContent = error.message || "チャンネル動画の取得に失敗しました。";
+      renderEmptyState(elements.channelVideosList, "チャンネル動画を読み込めませんでした。");
+    });
+  }
+});
+
 elements.savedLinesToggle?.addEventListener("click", () => {
   setPopoverOpen("saved-lines", state.activePopover !== "saved-lines");
 });
@@ -2199,10 +2274,12 @@ document.addEventListener("click", (event) => {
     const clickedInsidePanel = elements.settingsPanel?.contains(target)
       || elements.favoritesPanel?.contains(target)
       || elements.historyPanel?.contains(target)
+      || elements.channelPanel?.contains(target)
       || elements.savedLinesPanel?.contains(target)
       || elements.wordsPanel?.contains(target);
     const clickedToggle = elements.settingsToggle?.contains(target)
       || elements.favoritesToggle?.contains(target)
+      || elements.channelVideosToggle?.contains(target)
       || elements.navHistory?.contains(target)
       || elements.navWords?.contains(target)
       || elements.savedLinesToggle?.contains(target)
@@ -2308,6 +2385,10 @@ elements.panelBackdrop?.addEventListener("click", () => {
 elements.copyCurrentEnglish?.addEventListener("click", async (event) => {
   const cue = getActiveCue();
   await copyEnglishText(cue?.text || "", event.currentTarget);
+});
+
+elements.copyCurrentGroup?.addEventListener("click", async (event) => {
+  await copyEnglishText(getActiveCueGroupText(), event.currentTarget);
 });
 
 elements.aiSearchCurrentInline?.addEventListener("click", () => {
@@ -2686,6 +2767,7 @@ function repeatCue(index) {
 
 renderEmptyState(elements.searchResults, "検索結果はここに表示されます。");
 renderEmptyState(elements.recommendations, "おすすめ動画はここに表示されます。");
+renderEmptyState(elements.channelVideosList, "この動画のチャンネル一覧はここに表示されます。");
 renderEmptyState(elements.transcriptList, "字幕を読み込むと、ここにタイムスタンプ一覧が表示されます。");
 updateNowPlaying();
 setTrackOptions([]);
