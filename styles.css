@@ -1228,11 +1228,6 @@ select {
   font-weight: 800;
 }
 
-.cue-group-copy-symbol {
-  color: #a9f0c7;
-  border-color: rgba(169, 240, 199, 0.3);
-}
-
 .cue-original,
 .cue-translation {
   margin: 10px 0 0;
