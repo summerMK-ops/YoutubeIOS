@@ -416,11 +416,6 @@ function getCueTextUntilBoundary(startIndex) {
       continue;
     }
 
-    if (index === startIndex) {
-      parts.push(text);
-      continue;
-    }
-
     const boundaryIndex = text.search(boundaryRe);
     if (boundaryIndex >= 0) {
       parts.push(text.slice(0, boundaryIndex + 1).trim());
