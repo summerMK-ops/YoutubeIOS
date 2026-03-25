@@ -1799,6 +1799,34 @@ async function fetchJson(url, options = {}) {
   return payload;
 }
 
+function shouldHydrateVideoMeta(item) {
+  const title = String(item?.title || "").trim();
+  return !title || (/^youtube/i.test(title) && !String(item?.channelName || "").trim());
+}
+
+async function hydrateVideoMeta(item, videoId) {
+  if (!videoId || !shouldHydrateVideoMeta(item)) {
+    return {
+      ...item,
+      videoId
+    };
+  }
+
+  try {
+    const payload = await fetchJson(`/api/video-meta?videoId=${encodeURIComponent(videoId)}`);
+    return {
+      ...item,
+      ...payload,
+      videoId
+    };
+  } catch (_error) {
+    return {
+      ...item,
+      videoId
+    };
+  }
+}
+
 function renderVideoList(target, items, onSelect) {
   if (!items.length) {
     renderEmptyState(target, "動画がありません。");
@@ -2032,6 +2060,8 @@ async function handleVideoSelection(item, options = {}) {
     return;
   }
 
+  const selectedItem = await hydrateVideoMeta(item, videoId);
+
   state.currentVideoId = videoId;
   state.lastSavedSecond = -1;
   state.transcriptRequestId += 1;
@@ -2043,10 +2073,10 @@ async function handleVideoSelection(item, options = {}) {
     : getSavedPlaybackTime(videoId);
   state.pendingResumeTime = resumeTime;
   elements.urlInput.value = `https://www.youtube.com/watch?v=${videoId}`;
-  updateNowPlaying(item);
+  updateNowPlaying(selectedItem);
   renderFavorites();
   saveHistoryItem({
-    ...item,
+    ...selectedItem,
     videoId
   });
   state.subtitles = [];

@@ -800,6 +800,50 @@ async function fetchRecommendations(videoId) {
   return fallbackItems.filter((item) => item.videoId !== videoId).slice(0, 16);
 }
 
+function formatLengthTextFromSeconds(value) {
+  const totalSeconds = Number(value);
+  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) {
+    return "";
+  }
+
+  const total = Math.floor(totalSeconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+async function fetchVideoMeta(videoId) {
+  const html = await fetchPage(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`);
+  const playerResponse = extractJsonObjectAfterMarker(html, "var ytInitialPlayerResponse = ");
+  const videoDetails = playerResponse?.videoDetails;
+  if (!videoDetails?.videoId) {
+    throw new Error("Failed to fetch video metadata.");
+  }
+
+  const microformat = playerResponse?.microformat?.playerMicroformatRenderer || {};
+  const rawViewCount = Number(videoDetails.viewCount);
+  const viewCountText = Number.isFinite(rawViewCount) && rawViewCount > 0
+    ? `${rawViewCount.toLocaleString("en-US")} views`
+    : "";
+
+  return {
+    videoId: videoDetails.videoId,
+    title: videoDetails.title || "YouTube動画",
+    channelName: videoDetails.author || "",
+    lengthText: formatLengthTextFromSeconds(videoDetails.lengthSeconds),
+    viewCountText,
+    publishedTimeText: microformat.publishDate || "",
+    thumbnail: videoDetails.thumbnail?.thumbnails?.at?.(-1)?.url
+      || videoDetails.thumbnail?.thumbnails?.[0]?.url
+      || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    url: `https://www.youtube.com/watch?v=${videoDetails.videoId}`
+  };
+}
+
 async function fetchChannelVideos(videoId, sort = "latest") {
   const html = await fetchPage(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`);
   const playerResponse = extractJsonObjectAfterMarker(html, "var ytInitialPlayerResponse = ");
@@ -2039,6 +2083,23 @@ async function handleRecommendationsApi(requestUrl, response) {
   }
 }
 
+async function handleVideoMetaApi(requestUrl, response) {
+  const videoId = extractVideoId(requestUrl.searchParams.get("videoId"));
+  if (!videoId) {
+    sendJson(response, 400, { error: "Missing or invalid videoId." });
+    return;
+  }
+
+  try {
+    const payload = await fetchVideoMeta(videoId);
+    sendJson(response, 200, payload);
+  } catch (error) {
+    sendJson(response, 500, {
+      error: error.message || "Failed to fetch video metadata."
+    });
+  }
+}
+
 async function handleTranscriptApi(requestUrl, response) {
   const videoId = extractVideoId(requestUrl.searchParams.get("videoId"));
   const trackIndex = Number(requestUrl.searchParams.get("trackIndex") || "0");
@@ -2147,6 +2208,11 @@ const server = http.createServer(async (request, response) => {
 
   if (requestUrl.pathname === "/api/recommendations") {
     await handleRecommendationsApi(requestUrl, response);
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/video-meta") {
+    await handleVideoMetaApi(requestUrl, response);
     return;
   }
 
