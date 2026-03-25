@@ -1811,6 +1811,57 @@ async function hydrateVideoMeta(item, videoId) {
   };
 }
 
+function mergeVideoMeta(baseItem, nextMeta) {
+  return {
+    ...baseItem,
+    ...nextMeta,
+    videoId: nextMeta?.videoId || baseItem?.videoId || "",
+    title: nextMeta?.title || baseItem?.title || "YouTube動画",
+    channelName: nextMeta?.channelName || baseItem?.channelName || "",
+    thumbnail: nextMeta?.thumbnail || baseItem?.thumbnail || "",
+    url: nextMeta?.url || baseItem?.url || ""
+  };
+}
+
+function applyVideoMetaUpdate(videoId, nextMeta) {
+  if (!videoId || !nextMeta) {
+    return;
+  }
+
+  if (state.currentVideoId === videoId && state.selectedVideoMeta) {
+    state.selectedVideoMeta = mergeVideoMeta(state.selectedVideoMeta, nextMeta);
+    updateNowPlaying(state.selectedVideoMeta);
+  }
+
+  state.history = state.history.map((item) => item.videoId === videoId ? mergeVideoMeta(item, nextMeta) : item);
+  writeHistory(state.history);
+  if (readLastVideoMeta()?.videoId === videoId) {
+    const latestMeta = state.history.find((item) => item.videoId === videoId) || mergeVideoMeta(readLastVideoMeta() || {}, nextMeta);
+    writeLastVideoMeta(latestMeta);
+  }
+  renderHistory();
+
+  if (state.favorites.some((item) => item.videoId === videoId)) {
+    state.favorites = state.favorites.map((item) => item.videoId === videoId ? mergeVideoMeta(item, nextMeta) : item);
+    writeFavorites(state.favorites);
+    renderFavorites();
+    updateFavoriteButton();
+  }
+}
+
+async function enrichVideoMetaInBackground(item, videoId) {
+  if (!videoId || !shouldHydrateVideoMeta(item)) {
+    return;
+  }
+
+  try {
+    const payload = await fetchJson(`/api/video-meta?videoId=${encodeURIComponent(videoId)}`);
+    applyVideoMetaUpdate(videoId, payload);
+  } catch (_error) {
+    // Keep the placeholder title if metadata fetch fails.
+  }
+}
+
 function renderVideoList(target, items, onSelect) {
   if (!items.length) {
     renderEmptyState(target, "動画がありません。");
@@ -2063,6 +2114,7 @@ async function handleVideoSelection(item, options = {}) {
     ...selectedItem,
     videoId
   });
+  enrichVideoMetaInBackground(item, videoId);
   state.subtitles = [];
   state.cueGroups = [];
   state.cueGroupMap = [];
