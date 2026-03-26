@@ -1960,13 +1960,11 @@ async function serveStatic(request, requestUrl, response) {
     const ext = path.extname(targetPath).toLowerCase();
     const cacheControl = pathname === "/sw.js"
       ? "no-store"
-      : ext === ".js" || ext === ".css"
-        ? "public, max-age=3600, must-revalidate"
-        : ext === ".html"
-          ? "no-cache"
-      : ext === ".png" || ext === ".svg" || ext === ".ico"
-        ? "public, max-age=86400"
-        : "no-store";
+      : ext === ".js" || ext === ".css" || ext === ".html"
+        ? "no-store"
+        : ext === ".png" || ext === ".svg" || ext === ".ico"
+          ? "public, max-age=86400"
+          : "no-store";
     const etag = createStaticEtag(stat);
     const lastModified = stat.mtime.toUTCString();
 
