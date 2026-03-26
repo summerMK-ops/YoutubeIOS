@@ -1585,19 +1585,31 @@ async function getTranscriptWithFallback(videoId, trackIndex, language, provider
 
 async function getYoutubeTranscriptOnly(videoId, trackIndex, language, provider = "google") {
   try {
-    return await fetchTranscriptWithYtDlp(videoId, language, provider);
+    return await withTimeout(
+      fetchTranscriptWithYtDlp(videoId, language, provider),
+      9000,
+      "yt-dlp subtitle lookup timed out."
+    );
   } catch (error) {
     console.warn(`[transcript] yt-dlp subtitle lookup failed for ${videoId}: ${String(error?.message || error)}`);
   }
 
   try {
-    const trackData = await fetchCaptionTracks(videoId);
+    const trackData = await withTimeout(
+      fetchCaptionTracks(videoId),
+      8000,
+      "Caption track lookup timed out."
+    );
     const tracks = trackData.tracks;
     const fallbackIndex = chooseDefaultTrackIndex(tracks, trackData.defaultTrackIndex);
     const normalizedTrackIndex = Number.isInteger(trackIndex) && trackIndex >= 0 ? trackIndex : fallbackIndex;
     const selectedTrack = tracks[normalizedTrackIndex] || tracks[fallbackIndex] || tracks[0];
     const selectedTrackIndex = tracks.findIndex((track) => track.baseUrl === selectedTrack.baseUrl);
-    const subtitles = await fetchTrackCues(selectedTrack, language, provider);
+    const subtitles = await withTimeout(
+      fetchTrackCues(selectedTrack, language, provider),
+      8000,
+      "Caption body lookup timed out."
+    );
 
     return {
       source: "youtube",
