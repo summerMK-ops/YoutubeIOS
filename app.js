@@ -2329,7 +2329,7 @@ async function handleVideoSelection(item, options = {}) {
     renderVideoList(elements.recommendations, state.recommendations, handleVideoSelection);
   }
 
-  loadRecommendations(videoId).catch(() => {});
+  loadRecommendations(videoId);
   if (state.activePopover === "channel-videos") {
     loadChannelVideos(state.channelVideosSort, {
       videoId,
@@ -2339,11 +2339,13 @@ async function handleVideoSelection(item, options = {}) {
   }
 
   if (state.autoFetch) {
-    loadAutoTranscript(videoId, 0).catch((error) => {
+    try {
+      await loadAutoTranscript(videoId, 0);
+    } catch (error) {
       setTrackOptions([]);
       renderEmptyState(elements.transcriptList, "字幕を自動取得できませんでした。手動字幕ファイルも使えます。");
       setSubtitleStatus(error.message || "字幕を自動取得できませんでした。");
-    });
+    }
   }
 }
 
