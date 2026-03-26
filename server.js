@@ -1628,7 +1628,6 @@ async function getTranscriptWithAggressiveFallback(videoId, trackIndex, language
       "Caption lookup timed out."
     );
   } catch (error) {
-    throw new Error(String(error?.message || error) || "Failed to fetch transcript.");
     const captionErrorMessage = String(error?.message || error);
 
     try {
