@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260325-10">
+  <link rel="stylesheet" href="./styles.css?v=20260326-1">
 </head>
 <body class="font-small">
   <div class="app-shell">
@@ -78,6 +78,7 @@
         <div class="player-secondary-controls compact-secondary-controls">
           <button id="ai-search-current" class="ghost compact-icon-button compact-ai-button" type="button" aria-label="Open ChatGPT">AI検索</button>
           <button id="channel-videos-toggle" class="ghost compact-icon-button" type="button" aria-label="Open current channel videos">CH</button>
+          <button id="toggle-favorite-channel" class="ghost compact-icon-button compact-channel-favorite-button" type="button" aria-label="Favorite current channel">CH&#9734;</button>
           <button id="toggle-favorite" class="ghost compact-icon-button" type="button" aria-label="Favorite">&#9825;</button>
           <button id="repeat-current-cue" class="ghost compact-icon-button" type="button" aria-label="Repeat current cue">1x</button>
           <button id="repeat-current-group" class="ghost compact-icon-button" type="button" aria-label="Repeat sentence">AB</button>
@@ -200,6 +201,14 @@
       <div id="channel-videos-list" class="favorites-list"></div>
     </div>
 
+    <div id="favorite-channels-panel" class="side-popover hidden">
+      <div class="side-popover-header">
+        <h3>Favorite Channels</h3>
+        <button id="favorite-channels-close" class="ghost icon-button icon-button-small" type="button">Close</button>
+      </div>
+      <div id="favorite-channels-list" class="favorites-list"></div>
+    </div>
+
     <div id="saved-lines-panel" class="side-popover hidden">
       <div class="side-popover-header">
         <h3>Saved Lines</h3>
@@ -295,11 +304,12 @@
       <button id="nav-words" class="bottom-nav-button" type="button" aria-label="Words">&#9776;</button>
       <button id="nav-favorites" class="bottom-nav-button" type="button" aria-label="Favorites">&#9825;</button>
       <button id="nav-lines" class="bottom-nav-button" type="button" aria-label="Saved lines">&#10022;</button>
+      <button id="nav-channel-favorites" class="bottom-nav-button" type="button" aria-label="Favorite channels">&#10026;</button>
       <button id="nav-settings" class="bottom-nav-button" type="button" aria-label="Settings">&#9881;</button>
     </nav>
   </div>
 
-  <script src="./app.js?v=20260325-10"></script>
+  <script src="./app.js?v=20260326-1"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {

@@ -832,6 +832,7 @@ async function fetchVideoMeta(videoId) {
 
   return {
     videoId: videoDetails.videoId,
+    channelId: videoDetails.channelId || "",
     title: videoDetails.title || "YouTube動画",
     channelName: videoDetails.author || "",
     lengthText: formatLengthTextFromSeconds(videoDetails.lengthSeconds),
@@ -844,11 +845,16 @@ async function fetchVideoMeta(videoId) {
   };
 }
 
-async function fetchChannelVideos(videoId, sort = "latest") {
-  const html = await fetchPage(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`);
-  const playerResponse = extractJsonObjectAfterMarker(html, "var ytInitialPlayerResponse = ");
-  const channelId = playerResponse?.videoDetails?.channelId || "";
-  const channelName = playerResponse?.videoDetails?.author || "";
+async function fetchChannelVideos(videoId, sort = "latest", explicitChannelId = "", explicitChannelName = "") {
+  let channelId = explicitChannelId || "";
+  let channelName = explicitChannelName || "";
+
+  if (!channelId) {
+    const html = await fetchPage(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`);
+    const playerResponse = extractJsonObjectAfterMarker(html, "var ytInitialPlayerResponse = ");
+    channelId = playerResponse?.videoDetails?.channelId || "";
+    channelName = playerResponse?.videoDetails?.author || channelName;
+  }
 
   if (!channelId) {
     throw new Error("チャンネル情報を取得できませんでした。");
@@ -2181,15 +2187,17 @@ async function handleTranslateCuesApi(request, response) {
 
 async function handleChannelVideosApi(requestUrl, response) {
   const videoId = extractVideoId(requestUrl.searchParams.get("videoId"));
+  const channelId = String(requestUrl.searchParams.get("channelId") || "").trim();
+  const channelName = String(requestUrl.searchParams.get("channelName") || "").trim();
   const sort = requestUrl.searchParams.get("sort") === "popular" ? "popular" : "latest";
 
-  if (!videoId) {
+  if (!videoId && !channelId) {
     sendJson(response, 400, { error: "有効な videoId を指定してください。" });
     return;
   }
 
   try {
-    const payload = await fetchChannelVideos(videoId, sort);
+    const payload = await fetchChannelVideos(videoId, sort, channelId, channelName);
     sendJson(response, 200, payload);
   } catch (error) {
     sendJson(response, 500, {

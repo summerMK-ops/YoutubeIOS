@@ -1595,10 +1595,15 @@ select {
     font-size: 0.62rem;
   }
 
-  .compact-ai-button {
-    min-width: 52px;
-    padding: 0 6px;
-  }
+.compact-ai-button {
+  min-width: 52px;
+  padding: 0 6px;
+}
+
+.compact-channel-favorite-button {
+  min-width: 46px;
+  padding: 0 6px;
+}
 
   .compact-speed-control {
     min-width: 64px;
@@ -1704,7 +1709,7 @@ select {
     right: 10px;
     bottom: calc(env(safe-area-inset-bottom, 0) + 8px);
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(7, 1fr);
     gap: 6px;
     padding: 6px;
     border-radius: 16px;
