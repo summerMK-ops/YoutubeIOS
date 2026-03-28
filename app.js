@@ -61,10 +61,14 @@ const state = {
   isSeekingWithSlider: false,
   initialBootstrapStarted: false,
   heargapOpen: false,
-  heargapLoopEnabled: true,
-  heargapLoopCount: 3,
+  heargapCueIndex: -1,
+  heargapLoopMode: "off",
+  heargapIteration: 0,
+  heargapPlaying: false,
+  heargapPausedAt: null,
   heargapLoopTimer: null,
   heargapStopTimer: null,
+  heargapMonitorTimer: null,
   heargapResumePlayback: false
 };
 
@@ -435,8 +439,48 @@ function buildHearGapData(cue) {
   };
 }
 
+function getHearGapCue() {
+  if (
+    Number.isInteger(state.heargapCueIndex)
+    && state.heargapCueIndex >= 0
+    && state.heargapCueIndex < state.subtitles.length
+  ) {
+    return state.subtitles[state.heargapCueIndex];
+  }
+
+  return getActiveCue();
+}
+
+function getHearGapLoopCount() {
+  if (state.heargapLoopMode === "x3") {
+    return 3;
+  }
+
+  if (state.heargapLoopMode === "x10") {
+    return 10;
+  }
+
+  return 1;
+}
+
+function updateHearGapControls() {
+  if (elements.heargapPlay) {
+    elements.heargapPlay.textContent = state.heargapPlaying ? "Pause" : "Play Line";
+  }
+
+  if (elements.heargapLoop) {
+    const labelMap = {
+      off: "LoopOff",
+      x3: "LoopX3",
+      x10: "LoopX10"
+    };
+    elements.heargapLoop.textContent = labelMap[state.heargapLoopMode] || "LoopOff";
+    elements.heargapLoop.setAttribute("aria-pressed", String(state.heargapLoopMode !== "off"));
+  }
+}
+
 function renderHearGapSheet() {
-  const cue = getActiveCue();
+  const cue = getHearGapCue();
   const data = buildHearGapData(cue);
 
   elements.heargapOriginal.textContent = data.original;
@@ -447,6 +491,7 @@ function renderHearGapSheet() {
   elements.heargapRange.textContent = `${formatTime(data.start)} - ${formatTime(data.end)}`;
   elements.heargapNote.textContent = data.note || "音の崩れ方をこの画面で確認できます。";
   elements.heargapTags.innerHTML = data.tags.map((tag) => `<span class="heargap-tag">${escapeHtml(tag)}</span>`).join("");
+  updateHearGapControls();
 }
 
 function clearHearGapPlaybackTimers() {
@@ -458,60 +503,98 @@ function clearHearGapPlaybackTimers() {
     window.clearTimeout(state.heargapLoopTimer);
     state.heargapLoopTimer = null;
   }
+  if (state.heargapMonitorTimer) {
+    window.clearInterval(state.heargapMonitorTimer);
+    state.heargapMonitorTimer = null;
+  }
 }
 
-function stopHearGapPlayback(shouldPause = true) {
+function stopHearGapPlayback(shouldPause = true, preservePause = false) {
   clearHearGapPlaybackTimers();
   if (shouldPause && state.playerReady && state.player?.pauseVideo) {
     state.player.pauseVideo();
   }
-  if (elements.heargapPlay) {
-    elements.heargapPlay.textContent = "Play Line";
+  state.heargapPlaying = false;
+  if (!preservePause) {
+    state.heargapPausedAt = null;
+    state.heargapIteration = 0;
   }
+  updateHearGapControls();
 }
 
 function playHearGapCue() {
-  const cue = getActiveCue();
+  const cue = getHearGapCue();
   if (!cue || !state.playerReady || !state.player?.seekTo || !state.player?.playVideo) {
     return;
   }
 
-  stopHearGapPlayback(false);
-  const rate = Number(elements.heargapRate?.value || 0.85);
+  if (state.heargapPlaying) {
+    if (state.player?.getCurrentTime) {
+      const currentTime = Number(state.player.getCurrentTime() || 0);
+      state.heargapPausedAt = Number.isFinite(currentTime) ? currentTime : Number(cue.start || 0);
+    }
+    stopHearGapPlayback(true, true);
+    return;
+  }
+
+  clearHearGapPlaybackTimers();
+  const rate = Number(elements.heargapRate?.value || 1);
   const start = Number(cue.start || 0);
   const end = Number(cue.end || cue.start || 0);
-  const durationMs = Math.max(((end - start) * 1000) / Math.max(rate, 0.1), 350);
-  let playCount = 0;
+  const loopCount = getHearGapLoopCount();
+  const initialStart = (
+    typeof state.heargapPausedAt === "number"
+    && state.heargapPausedAt > start
+    && state.heargapPausedAt < end
+  ) ? state.heargapPausedAt : start;
+
+  if (!(end > start)) {
+    return;
+  }
 
   if (state.player?.setPlaybackRate) {
     state.player.setPlaybackRate(rate);
   }
 
-  const playOnce = () => {
-    state.player.seekTo(start, true);
+  const playOnce = (segmentStart) => {
+    state.heargapPlaying = true;
+    updateHearGapControls();
+    state.player.seekTo(segmentStart, true);
     state.player.playVideo();
-    if (elements.heargapPlay) {
-      elements.heargapPlay.textContent = "Playing...";
-    }
 
-    state.heargapStopTimer = window.setTimeout(() => {
-      state.player.pauseVideo();
-      playCount += 1;
-
-      if (state.heargapLoopEnabled && playCount < state.heargapLoopCount) {
-        state.heargapLoopTimer = window.setTimeout(playOnce, 300);
+    state.heargapMonitorTimer = window.setInterval(() => {
+      if (!state.player?.getCurrentTime) {
         return;
       }
 
-      stopHearGapPlayback(false);
-    }, durationMs);
+      const currentTime = Number(state.player.getCurrentTime() || 0);
+      if (currentTime >= end - 0.04) {
+        clearHearGapPlaybackTimers();
+        state.player.pauseVideo();
+        state.heargapPausedAt = null;
+        state.heargapIteration += 1;
+
+        if (state.heargapIteration < loopCount) {
+          state.heargapLoopTimer = window.setTimeout(() => {
+            playOnce(start);
+          }, 300);
+          return;
+        }
+
+        stopHearGapPlayback(false);
+      }
+    }, 60);
   };
 
-  playOnce();
+  if (initialStart <= start + 0.001) {
+    state.heargapIteration = 0;
+  }
+  playOnce(initialStart);
 }
 
 function openHearGapSheet() {
   state.heargapOpen = true;
+  state.heargapCueIndex = state.activeIndex;
   renderHearGapSheet();
   elements.heargapBackdrop?.classList.remove("hidden");
   elements.heargapSheet?.classList.remove("hidden");
@@ -524,6 +607,7 @@ function openHearGapSheet() {
 function closeHearGapSheet() {
   state.heargapOpen = false;
   stopHearGapPlayback();
+  state.heargapCueIndex = -1;
   elements.heargapBackdrop?.classList.remove("is-open");
   elements.heargapSheet?.classList.remove("is-open");
   window.setTimeout(() => {
@@ -1860,9 +1944,13 @@ elements.heargapPlay?.addEventListener("click", () => {
 });
 
 elements.heargapLoop?.addEventListener("click", () => {
-  state.heargapLoopEnabled = !state.heargapLoopEnabled;
-  elements.heargapLoop?.setAttribute("aria-pressed", String(state.heargapLoopEnabled));
-  elements.heargapLoop.textContent = state.heargapLoopEnabled ? "Loop x3" : "Loop Off";
+  const nextLoopMode = {
+    off: "x3",
+    x3: "x10",
+    x10: "off"
+  };
+  state.heargapLoopMode = nextLoopMode[state.heargapLoopMode] || "off";
+  updateHearGapControls();
 });
 
 elements.heargapRate?.addEventListener("change", () => {
@@ -1882,6 +1970,9 @@ function updateActiveCue(index, forceScroll = false) {
   }
 
   state.activeIndex = index;
+  if (state.heargapOpen && !state.heargapPlaying) {
+    state.heargapCueIndex = index;
+  }
   const cue = state.subtitles[index];
   if (!cue) {
     elements.currentOriginal.textContent = "字幕はまだありません。";

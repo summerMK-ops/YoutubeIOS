@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260328-2">
+  <link rel="stylesheet" href="./styles.css?v=20260328-3">
 </head>
 <body class="font-small">
   <div class="app-shell">
@@ -322,14 +322,14 @@
         <div class="heargap-controls">
           <div class="heargap-control-row">
             <button id="heargap-play" class="primary control-button" type="button">Play Line</button>
-            <button id="heargap-loop" class="ghost control-button" type="button" aria-pressed="false">Loop x3</button>
+            <button id="heargap-loop" class="ghost control-button" type="button" aria-pressed="false">LoopOff</button>
           </div>
           <div class="heargap-control-grid">
             <label class="field compact-field">
               <span>Rate</span>
               <select id="heargap-rate" class="ghost speed-select">
-                <option value="1">1.0x</option>
-                <option value="0.85" selected>0.85x</option>
+                <option value="1" selected>1.0x</option>
+                <option value="0.85">0.85x</option>
                 <option value="0.75">0.75x</option>
                 <option value="0.6">0.6x</option>
               </select>
@@ -354,7 +354,7 @@
     </nav>
   </div>
 
-  <script src="./app.js?v=20260328-2"></script>
+  <script src="./app.js?v=20260328-3"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
