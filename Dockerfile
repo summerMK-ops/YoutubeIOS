@@ -1,6 +1,7 @@
 FROM python:3.11-bookworm AS yt_dlp_stage
 
-RUN pip install --no-cache-dir yt-dlp
+RUN mkdir -p /tmp && chmod 1777 /tmp \
+  && pip install --no-cache-dir yt-dlp
 
 FROM node:20-bookworm-slim
 
