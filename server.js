@@ -938,7 +938,9 @@ async function fetchCaptionTracks(videoId) {
 
 function buildTrackUrl(baseUrl, options = {}) {
   const parsed = new URL(baseUrl);
-  parsed.searchParams.set("fmt", "json3");
+  if (options.format) {
+    parsed.searchParams.set("fmt", options.format);
+  }
   if (options.targetLanguage) {
     parsed.searchParams.set("tlang", options.targetLanguage);
   }
@@ -964,24 +966,39 @@ function buildTimedTextTrack(videoId, languageCode, kind = "") {
 }
 
 async function fetchTrackCues(track, targetLanguage, provider = "google") {
-  const originalResponse = await fetch(buildTrackUrl(track.baseUrl), {
-    headers: createYoutubePageHeaders({
-      "Accept": "application/json,text/plain,*/*"
-    })
-  });
+  let originalCues = [];
+  let lastError = null;
 
-  if (!originalResponse.ok) {
-    throw new Error("字幕本体を取得できませんでした。");
+  for (const format of ["json3", "srv3", "vtt", "ttml", ""]) {
+    try {
+      const originalResponse = await fetch(buildTrackUrl(track.baseUrl, { format }), {
+        headers: createYoutubePageHeaders({
+          "Accept": "application/json,text/plain,text/vtt,text/xml,*/*"
+        })
+      });
+
+      if (!originalResponse.ok) {
+        throw new Error("字幕本体を取得できませんでした。");
+      }
+
+      const originalText = await originalResponse.text();
+      if (!originalText.trim()) {
+        throw new Error("empty-caption-body");
+      }
+
+      originalCues = parseSubtitlePayload(originalText, format);
+      if (originalCues.length) {
+        break;
+      }
+
+      throw new Error("字幕イベントを解析できませんでした。");
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  const originalText = await originalResponse.text();
-  if (!originalText.trim()) {
-    throw new Error("empty-caption-body");
-  }
-
-  const originalCues = parseCaptionEvents(JSON.parse(originalText));
   if (!originalCues.length) {
-    throw new Error("字幕イベントを解析できませんでした。");
+    throw lastError || new Error("empty-caption-body");
   }
 
   const mergedCues = mergeTracks(originalCues, []);
