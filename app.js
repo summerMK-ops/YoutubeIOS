@@ -2900,7 +2900,10 @@ function splitGroupedTranslation(translation, originalTexts) {
       score += 6;
     }
     if (/\bthink\b|it'?s like|seems?/.test(english) && /思|考え|感じ|ようなもの|気が/.test(japanese)) {
-      score += 5;
+      score += 9;
+    }
+    if (/\bthink\b|it'?s like|seems?/.test(english) && /です|ます|だった|だと思|ようなもの/.test(japanese)) {
+      score += 7;
     }
     if (/\bquit\b|stop|give up|leave/.test(english) && /辞|やめ|止|離/.test(japanese)) {
       score += 5;
@@ -2926,27 +2929,62 @@ function splitGroupedTranslation(translation, originalTexts) {
       return null;
     }
 
-    const buckets = Array.from({ length: expectedCount }, () => []);
-    clauses.forEach((clause, clauseIndex) => {
-      let bestLineIndex = 0;
-      let bestScore = -Infinity;
-
-      sourceTexts.forEach((lineText, lineIndex) => {
-        const score = scoreClauseAgainstLine(lineText, clause, lineIndex, clauseIndex, clauses.length);
-        if (score > bestScore) {
-          bestScore = score;
-          bestLineIndex = lineIndex;
-        }
-      });
-
-      buckets[bestLineIndex].push(clause);
-    });
-
-    if (buckets.some((parts) => !parts.length)) {
+    if (clauses.length < expectedCount) {
       return null;
     }
 
-    return buckets.map((parts) => parts.join("").trim());
+    const scoreRange = (lineIndex, start, end) => {
+      let total = 0;
+      for (let clauseIndex = start; clauseIndex < end; clauseIndex += 1) {
+        total += scoreClauseAgainstLine(sourceTexts[lineIndex], clauses[clauseIndex], lineIndex, clauseIndex, clauses.length);
+      }
+      return total;
+    };
+
+    const memo = new Map();
+    const solve = (lineIndex, clauseStart) => {
+      const key = `${lineIndex}:${clauseStart}`;
+      if (memo.has(key)) {
+        return memo.get(key);
+      }
+
+      if (lineIndex === expectedCount - 1) {
+        const result = {
+          score: scoreRange(lineIndex, clauseStart, clauses.length),
+          groups: [clauses.slice(clauseStart)]
+        };
+        memo.set(key, result);
+        return result;
+      }
+
+      let best = null;
+      const minEnd = clauseStart + 1;
+      const maxEnd = clauses.length - (expectedCount - lineIndex - 1);
+      for (let clauseEnd = minEnd; clauseEnd <= maxEnd; clauseEnd += 1) {
+        const rest = solve(lineIndex + 1, clauseEnd);
+        if (!rest) {
+          continue;
+        }
+
+        const currentScore = scoreRange(lineIndex, clauseStart, clauseEnd) + rest.score;
+        if (!best || currentScore > best.score) {
+          best = {
+            score: currentScore,
+            groups: [clauses.slice(clauseStart, clauseEnd), ...rest.groups]
+          };
+        }
+      }
+
+      memo.set(key, best);
+      return best;
+    };
+
+    const solution = solve(0, 0);
+    if (!solution?.groups || solution.groups.length !== expectedCount) {
+      return null;
+    }
+
+    return solution.groups.map((parts) => parts.join("").trim());
   };
 
   const redistributeText = (text) => {
