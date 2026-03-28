@@ -590,7 +590,8 @@ function playHearGapCue() {
   const start = Number(cue.start || 0);
   const end = Number(cue.end || cue.start || 0);
   const loopCount = getHearGapLoopCount();
-  const stopAt = Math.max(start, end - 0.08);
+  const stopAt = Math.max(start, end - 0.015);
+  const settleAt = Math.max(start, end - 0.025);
   const initialStart = (
     typeof state.heargapPausedAt === "number"
     && state.heargapPausedAt > start
@@ -604,7 +605,7 @@ function playHearGapCue() {
   const finishIteration = () => {
     clearHearGapPlaybackTimers();
     state.player.pauseVideo();
-    state.player.seekTo(stopAt, true);
+    state.player.seekTo(settleAt, true);
     state.heargapPausedAt = null;
     state.heargapIteration += 1;
 
@@ -626,7 +627,7 @@ function playHearGapCue() {
     window.setTimeout(applyHearGapPlaybackRate, 0);
     window.setTimeout(applyHearGapPlaybackRate, 120);
 
-    const safetyDurationMs = Math.max((((stopAt - segmentStart) * 1000) / Math.max(rate, 0.1)) + 180, 260);
+    const safetyDurationMs = Math.max((((end - segmentStart) * 1000) / Math.max(rate, 0.1)) + 70, 220);
     state.heargapStopTimer = window.setTimeout(() => {
       finishIteration();
     }, safetyDurationMs);

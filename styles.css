@@ -1946,6 +1946,16 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .heargap-control-row-nav {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .heargap-control-row-nav .control-button {
+    min-width: 0;
+    padding: 11px 8px;
+    font-size: 0.92rem;
+  }
+
   .dictionary-meaning-line {
     font-size: 0.95rem;
     gap: 8px;
