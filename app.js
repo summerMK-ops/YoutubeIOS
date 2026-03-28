@@ -2353,13 +2353,17 @@ function startSyncLoop() {
 }
 
 function createPlayer(videoId) {
+  const origin = window.location.origin;
   state.player = new window.YT.Player("player", {
+    host: "https://www.youtube.com",
     videoId,
     playerVars: {
       autoplay: 0,
       rel: 0,
       modestbranding: 1,
-      playsinline: 1
+      playsinline: 1,
+      enablejsapi: 1,
+      origin
     },
     events: {
       onReady: () => {
