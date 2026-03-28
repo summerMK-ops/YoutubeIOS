@@ -1,4 +1,4 @@
-FROM python:3.11-slim AS yt_dlp_stage
+FROM python:3.11-bookworm AS yt_dlp_stage
 
 RUN pip install --no-cache-dir yt-dlp
 
