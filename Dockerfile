@@ -19,6 +19,8 @@ COPY --from=yt_dlp_stage /usr/local/bin/yt-dlp /usr/local/bin/yt-dlp
 COPY --from=yt_dlp_stage /usr/local/lib/python3.11 /usr/local/lib/python3.11
 COPY --from=yt_dlp_stage /usr/local/lib/libpython3.11.so.1.0 /usr/local/lib/libpython3.11.so.1.0
 COPY --from=yt_dlp_stage /usr/local/lib/libpython3.so /usr/local/lib/libpython3.so
+COPY --from=yt_dlp_stage /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/libssl.so.3
+COPY --from=yt_dlp_stage /usr/lib/x86_64-linux-gnu/libcrypto.so.3 /usr/lib/x86_64-linux-gnu/libcrypto.so.3
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
