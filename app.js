@@ -363,74 +363,14 @@ function fallbackHearGapIpa(word) {
     .replace(/u/g, "ʌ");
 }
 
-function integerToEnglish(value) {
-  const number = Math.max(0, Math.floor(Number(value) || 0));
-  const direct = {
-    0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
-    6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven",
-    12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen", 16: "sixteen",
-    17: "seventeen", 18: "eighteen", 19: "nineteen", 20: "twenty", 30: "thirty",
-    40: "forty", 50: "fifty", 60: "sixty", 70: "seventy", 80: "eighty", 90: "ninety"
-  };
-
-  if (direct[number]) {
-    return direct[number];
-  }
-  if (number < 100) {
-    const tens = Math.floor(number / 10) * 10;
-    const ones = number % 10;
-    return `${direct[tens]} ${direct[ones]}`.trim();
-  }
-  if (number < 1000) {
-    const hundreds = Math.floor(number / 100);
-    const remainder = number % 100;
-    return remainder ? `${direct[hundreds]} hundred ${integerToEnglish(remainder)}` : `${direct[hundreds]} hundred`;
-  }
-  if (number < 10000) {
-    const thousands = Math.floor(number / 1000);
-    const remainder = number % 1000;
-    return remainder ? `${direct[thousands]} thousand ${integerToEnglish(remainder)}` : `${direct[thousands]} thousand`;
-  }
-  return String(number).split("").map((digit) => direct[Number(digit)] || digit).join(" ");
-}
-
-function numericTokenToSpoken(token) {
-  const value = String(token || "").trim();
-  if (!value) {
-    return { heard: "", kana: "", ipa: "", note: "" };
-  }
-
-  let spoken = value;
-  if (/^\d+%$/.test(value)) {
-    spoken = `${integerToEnglish(value.slice(0, -1))} percent`;
-  } else if (/^\d+:\d+$/.test(value)) {
-    const [hourPart, minutePart] = value.split(":");
-    const minuteValue = Number(minutePart);
-    const minuteWords = minuteValue < 10 ? `oh ${integerToEnglish(minuteValue)}` : integerToEnglish(minuteValue);
-    spoken = `${integerToEnglish(hourPart)} ${minuteWords}`;
-  } else if (/^\d+\.\d+$/.test(value)) {
-    const [wholePart, decimalPart] = value.split(".");
-    const decimalWords = decimalPart.split("").map((digit) => integerToEnglish(digit)).join(" ");
-    spoken = `${integerToEnglish(wholePart)} point ${decimalWords}`;
-  } else if (/^\d+$/.test(value)) {
-    spoken = integerToEnglish(value);
-  }
-
-  const spokenWords = spoken.split(/\s+/).filter(Boolean);
-  return {
-    heard: spoken,
-    kana: spokenWords.map((word) => HEARGAP_KANA_MAP[word] || fallbackHearGapKana(word)).join(" "),
-    ipa: spokenWords.map((word) => HEARGAP_IPA_MAP[word] || fallbackHearGapIpa(word)).join(" "),
-    note: spoken !== value ? `数字 ${value} は ${spoken} と読む。` : ""
-  };
-}
-
 function buildHearGapData(cue) {
   const text = String(cue?.text || "").trim();
   const translation = String(cue?.translation || "").trim();
   const tokens = text
     .replace(/([a-zA-Z])([,!?;:])([a-zA-Z])/g, "$1 $2 $3")
+    .replace(/[^a-zA-Z0-9'\s]/g, " ")
     .split(/\s+/)
+    .map(normalizeHearGapWord)
     .filter(Boolean);
 
   const heardTokens = [];
@@ -440,22 +380,8 @@ function buildHearGapData(cue) {
   const notes = [];
 
   for (let index = 0; index < tokens.length; ) {
-    const rawFirst = tokens[index];
-    const rawSecond = tokens[index + 1];
-    const first = normalizeHearGapWord(rawFirst);
-    const second = normalizeHearGapWord(rawSecond);
-
-    if (/^\d+(?:[:.]\d+)?%?$/.test(rawFirst)) {
-      const numeric = numericTokenToSpoken(rawFirst);
-      heardTokens.push(numeric.heard);
-      kanaTokens.push(numeric.kana);
-      ipaTokens.push(numeric.ipa);
-      if (numeric.note) {
-        notes.push(numeric.note);
-      }
-      index += 1;
-      continue;
-    }
+    const first = tokens[index];
+    const second = tokens[index + 1];
 
     if (first === "right" && second === "now") {
       heardTokens.push("right now");
