@@ -2801,7 +2801,7 @@ function buildTranslationGroups(subtitles) {
       end: group.end,
       cueIndexes,
       text: cues
-        .map((cue, index) => `__LINE_${index + 1}__ ${(cue.text || "").trim()}`)
+        .map((cue) => (cue.text || "").trim())
         .join("\n")
         .trim(),
       translation: ""
