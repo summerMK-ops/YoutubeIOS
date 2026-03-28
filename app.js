@@ -2800,10 +2800,46 @@ function buildTranslationGroups(subtitles) {
       start: group.start,
       end: group.end,
       cueIndexes,
-      text: cues.map((cue) => cue.text || "").join(" ").replace(/\s+/g, " ").trim(),
+      text: cues
+        .map((cue, index) => `[[${index + 1}]] ${(cue.text || "").trim()}`)
+        .join("\n")
+        .trim(),
       translation: ""
     };
   }).filter((group) => group.text);
+}
+
+function splitGroupedTranslation(translation, expectedCount) {
+  const normalized = String(translation || "").replace(/\r/g, "").trim();
+  if (!normalized) {
+    return Array.from({ length: expectedCount }, () => "");
+  }
+
+  const markerRegex = /\[\[(\d+)\]\]\s*([\s\S]*?)(?=(?:\n?\s*\[\[\d+\]\])|$)/g;
+  const markerMatches = Array.from(normalized.matchAll(markerRegex));
+  if (markerMatches.length) {
+    const parts = Array.from({ length: expectedCount }, () => "");
+    markerMatches.forEach((match) => {
+      const index = Number(match[1]) - 1;
+      if (index >= 0 && index < expectedCount) {
+        parts[index] = String(match[2] || "").replace(/\s+/g, " ").trim();
+      }
+    });
+    return parts;
+  }
+
+  const lineParts = normalized
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  if (lineParts.length === expectedCount) {
+    return lineParts;
+  }
+
+  return [
+    normalized.replace(/\s+/g, " ").trim(),
+    ...Array.from({ length: Math.max(0, expectedCount - 1) }, () => "")
+  ];
 }
 
 function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartIndex, translationGroups) {
@@ -2814,8 +2850,8 @@ function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartInd
       return;
     }
 
-    const translation = group?.translation || "";
-    targetGroup.cueIndexes.forEach((cueIndex) => {
+    const translations = splitGroupedTranslation(group?.translation || "", targetGroup.cueIndexes.length);
+    targetGroup.cueIndexes.forEach((cueIndex, cueOffset) => {
       const currentCue = nextSubtitles[cueIndex];
       if (!currentCue) {
         return;
@@ -2823,7 +2859,7 @@ function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartInd
 
       nextSubtitles[cueIndex] = {
         ...currentCue,
-        translation: translation || currentCue.translation || ""
+        translation: translations[cueOffset] || currentCue.translation || ""
       };
     });
   });
