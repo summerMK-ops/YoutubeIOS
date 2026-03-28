@@ -2815,6 +2815,11 @@ function splitGroupedTranslation(translation, expectedCount) {
     return Array.from({ length: expectedCount }, () => "");
   }
 
+  const sentenceParts = normalized
+    .split(/(?<=[。！？!?])\s+|\n+/)
+    .map((part) => part.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
   const markerRegex = /(?:__LINE_(\d+)__|\[\[(\d+)\]\])\s*([\s\S]*?)(?=(?:\n?\s*(?:__LINE_\d+__|\[\[\d+\]\]))|$)/g;
   const markerMatches = Array.from(normalized.matchAll(markerRegex));
   if (markerMatches.length) {
@@ -2826,6 +2831,9 @@ function splitGroupedTranslation(translation, expectedCount) {
       }
     });
     const fallback = normalized.replace(/\s+/g, " ").trim();
+    if (sentenceParts.length === expectedCount) {
+      return parts.map((part, index) => part || sentenceParts[index] || fallback);
+    }
     return parts.map((part, index) => {
       if (part) {
         return part;
@@ -2842,6 +2850,9 @@ function splitGroupedTranslation(translation, expectedCount) {
     .filter(Boolean);
   if (lineParts.length === expectedCount) {
     return lineParts;
+  }
+  if (sentenceParts.length === expectedCount) {
+    return sentenceParts;
   }
 
   const fallback = normalized.replace(/\s+/g, " ").trim();
