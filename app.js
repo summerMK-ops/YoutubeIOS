@@ -222,7 +222,9 @@ const elements = {
   heargapTranslation: document.getElementById("heargap-translation"),
   heargapTags: document.getElementById("heargap-tags"),
   heargapNote: document.getElementById("heargap-note"),
+  heargapPrev: document.getElementById("heargap-prev"),
   heargapPlay: document.getElementById("heargap-play"),
+  heargapNext: document.getElementById("heargap-next"),
   heargapLoop: document.getElementById("heargap-loop"),
   heargapRate: document.getElementById("heargap-rate"),
   heargapRange: document.getElementById("heargap-range"),
@@ -451,6 +453,20 @@ function getHearGapCue() {
   return getActiveCue();
 }
 
+function applyHearGapPlaybackRate() {
+  if (!state.playerReady || !state.player?.setPlaybackRate || !elements.heargapRate) {
+    return 1;
+  }
+
+  const rate = Number(elements.heargapRate.value || 1);
+  if (Number.isFinite(rate) && rate > 0) {
+    state.player.setPlaybackRate(rate);
+    return rate;
+  }
+
+  return 1;
+}
+
 function getHearGapLoopCount() {
   if (state.heargapLoopMode === "x3") {
     return 3;
@@ -476,6 +492,15 @@ function updateHearGapControls() {
     };
     elements.heargapLoop.textContent = labelMap[state.heargapLoopMode] || "LoopOff";
     elements.heargapLoop.setAttribute("aria-pressed", String(state.heargapLoopMode !== "off"));
+  }
+
+  const hasPrev = state.heargapCueIndex > 0;
+  const hasNext = state.heargapCueIndex >= 0 && state.heargapCueIndex < state.subtitles.length - 1;
+  if (elements.heargapPrev) {
+    elements.heargapPrev.disabled = !hasPrev;
+  }
+  if (elements.heargapNext) {
+    elements.heargapNext.disabled = !hasNext;
   }
 }
 
@@ -538,7 +563,7 @@ function playHearGapCue() {
   }
 
   clearHearGapPlaybackTimers();
-  const rate = Number(elements.heargapRate?.value || 1);
+  const rate = applyHearGapPlaybackRate();
   const start = Number(cue.start || 0);
   const end = Number(cue.end || cue.start || 0);
   const loopCount = getHearGapLoopCount();
@@ -553,15 +578,14 @@ function playHearGapCue() {
     return;
   }
 
-  if (state.player?.setPlaybackRate) {
-    state.player.setPlaybackRate(rate);
-  }
-
   const playOnce = (segmentStart) => {
     state.heargapPlaying = true;
     updateHearGapControls();
     state.player.seekTo(segmentStart, true);
     state.player.playVideo();
+    window.setTimeout(() => {
+      applyHearGapPlaybackRate();
+    }, 80);
 
     state.heargapMonitorTimer = window.setInterval(() => {
       if (!state.player?.getCurrentTime) {
@@ -592,6 +616,27 @@ function playHearGapCue() {
     state.heargapIteration = 0;
   }
   playOnce(initialStart);
+}
+
+function stepHearGapCue(delta) {
+  if (!state.subtitles.length) {
+    return;
+  }
+
+  const baseIndex = state.heargapCueIndex >= 0 ? state.heargapCueIndex : state.activeIndex;
+  const nextIndex = Math.max(0, Math.min(state.subtitles.length - 1, baseIndex + delta));
+  if (nextIndex === baseIndex) {
+    return;
+  }
+
+  stopHearGapPlayback();
+  state.heargapCueIndex = nextIndex;
+  const cue = state.subtitles[nextIndex];
+  updateActiveCue(nextIndex, true);
+  if (cue && !state.repeatMode) {
+    seekTo(cue.start, false);
+  }
+  renderHearGapSheet();
 }
 
 function openHearGapSheet() {
@@ -1945,6 +1990,14 @@ elements.heargapPlay?.addEventListener("click", () => {
   playHearGapCue();
 });
 
+elements.heargapPrev?.addEventListener("click", () => {
+  stepHearGapCue(-1);
+});
+
+elements.heargapNext?.addEventListener("click", () => {
+  stepHearGapCue(1);
+});
+
 elements.heargapLoop?.addEventListener("click", () => {
   const nextLoopMode = {
     off: "x3",
@@ -1956,6 +2009,7 @@ elements.heargapLoop?.addEventListener("click", () => {
 });
 
 elements.heargapRate?.addEventListener("change", () => {
+  applyHearGapPlaybackRate();
   if (state.heargapOpen) {
     renderHearGapSheet();
   }
@@ -2187,7 +2241,9 @@ function createPlayer(videoId) {
           state.pendingResumeTime = 0;
         }
         applyPlaybackRate();
-        syncActiveCue();
+        if (!state.heargapPlaying) {
+          syncActiveCue();
+        }
         updatePlaybackButton();
         updateTransportUI();
         persistCurrentPlaybackTime();
@@ -2440,6 +2496,31 @@ function applyVideoMetaUpdate(videoId, nextMeta) {
     updateFavoriteButton();
   }
 }
+
+let heargapTouchStartY = 0;
+let heargapTouchStartX = 0;
+
+elements.heargapSheet?.addEventListener("touchstart", (event) => {
+  const touch = event.touches?.[0];
+  if (!touch) {
+    return;
+  }
+  heargapTouchStartY = touch.clientY;
+  heargapTouchStartX = touch.clientX;
+}, { passive: true });
+
+elements.heargapSheet?.addEventListener("touchend", (event) => {
+  const touch = event.changedTouches?.[0];
+  if (!touch || !state.heargapOpen) {
+    return;
+  }
+
+  const deltaY = touch.clientY - heargapTouchStartY;
+  const deltaX = Math.abs(touch.clientX - heargapTouchStartX);
+  if (deltaY > 90 && deltaY > deltaX * 1.2) {
+    closeHearGapSheet();
+  }
+}, { passive: true });
 
 async function enrichVideoMetaInBackground(item, videoId) {
   if (!videoId || !shouldHydrateVideoMeta(item)) {
