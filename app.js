@@ -2855,8 +2855,32 @@ function splitGroupedTranslation(translation, expectedCount) {
     return sentenceParts;
   }
 
+  const distributeParts = (parts) => {
+    if (!parts.length) {
+      return null;
+    }
+
+    return Array.from({ length: expectedCount }, (_value, index) => {
+      const start = Math.floor((index * parts.length) / expectedCount);
+      const end = Math.floor(((index + 1) * parts.length) / expectedCount);
+      const slice = parts.slice(start, Math.max(start + 1, end));
+      return slice.join(" ").trim();
+    });
+  };
+
+  if (sentenceParts.length > 1) {
+    return distributeParts(sentenceParts);
+  }
+
+  if (lineParts.length > 1) {
+    return distributeParts(lineParts);
+  }
+
   const fallback = normalized.replace(/\s+/g, " ").trim();
-  return Array.from({ length: expectedCount }, (_value, index) => lineParts[index] || fallback);
+  return [
+    fallback,
+    ...Array.from({ length: Math.max(0, expectedCount - 1) }, () => "")
+  ];
 }
 
 function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartIndex, translationGroups) {
