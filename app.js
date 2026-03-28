@@ -453,15 +453,38 @@ function getHearGapCue() {
   return getActiveCue();
 }
 
+function setPlayerPlaybackRate(preferredRate) {
+  if (!state.playerReady || !state.player?.setPlaybackRate) {
+    return 1;
+  }
+
+  const targetRate = Number(preferredRate || 1);
+  const supportedRates = typeof state.player?.getAvailablePlaybackRates === "function"
+    ? state.player.getAvailablePlaybackRates().filter((rate) => Number.isFinite(rate) && rate > 0)
+    : [];
+
+  const nextRate = supportedRates.length
+    ? supportedRates.reduce((closest, rate) => (
+      Math.abs(rate - targetRate) < Math.abs(closest - targetRate) ? rate : closest
+    ), supportedRates[0])
+    : targetRate;
+
+  if (Number.isFinite(nextRate) && nextRate > 0) {
+    state.player.setPlaybackRate(nextRate);
+    return nextRate;
+  }
+
+  return 1;
+}
+
 function applyHearGapPlaybackRate() {
-  if (!state.playerReady || !state.player?.setPlaybackRate || !elements.heargapRate) {
+  if (!elements.heargapRate) {
     return 1;
   }
 
   const rate = Number(elements.heargapRate.value || 1);
   if (Number.isFinite(rate) && rate > 0) {
-    state.player.setPlaybackRate(rate);
-    return rate;
+    return setPlayerPlaybackRate(rate);
   }
 
   return 1;
@@ -578,14 +601,35 @@ function playHearGapCue() {
     return;
   }
 
+  const finishIteration = () => {
+    clearHearGapPlaybackTimers();
+    state.player.pauseVideo();
+    state.player.seekTo(stopAt, true);
+    state.heargapPausedAt = null;
+    state.heargapIteration += 1;
+
+    if (state.heargapIteration < loopCount) {
+      state.heargapLoopTimer = window.setTimeout(() => {
+        playOnce(start);
+      }, 300);
+      return;
+    }
+
+    stopHearGapPlayback(false);
+  };
+
   const playOnce = (segmentStart) => {
     state.heargapPlaying = true;
     updateHearGapControls();
     state.player.seekTo(segmentStart, true);
     state.player.playVideo();
-    window.setTimeout(() => {
-      applyHearGapPlaybackRate();
-    }, 80);
+    window.setTimeout(applyHearGapPlaybackRate, 0);
+    window.setTimeout(applyHearGapPlaybackRate, 120);
+
+    const safetyDurationMs = Math.max((((stopAt - segmentStart) * 1000) / Math.max(rate, 0.1)) + 180, 260);
+    state.heargapStopTimer = window.setTimeout(() => {
+      finishIteration();
+    }, safetyDurationMs);
 
     state.heargapMonitorTimer = window.setInterval(() => {
       if (!state.player?.getCurrentTime) {
@@ -594,20 +638,7 @@ function playHearGapCue() {
 
       const currentTime = Number(state.player.getCurrentTime() || 0);
       if (currentTime >= stopAt) {
-        clearHearGapPlaybackTimers();
-        state.player.pauseVideo();
-        state.player.seekTo(stopAt, true);
-        state.heargapPausedAt = null;
-        state.heargapIteration += 1;
-
-        if (state.heargapIteration < loopCount) {
-          state.heargapLoopTimer = window.setTimeout(() => {
-            playOnce(start);
-          }, 300);
-          return;
-        }
-
-        stopHearGapPlayback(false);
+        finishIteration();
       }
     }, 60);
   };
@@ -2240,7 +2271,11 @@ function createPlayer(videoId) {
           seekTo(state.pendingResumeTime, false);
           state.pendingResumeTime = 0;
         }
-        applyPlaybackRate();
+        if (state.heargapPlaying) {
+          applyHearGapPlaybackRate();
+        } else {
+          applyPlaybackRate();
+        }
         if (!state.heargapPlaying) {
           syncActiveCue();
         }
@@ -2253,13 +2288,13 @@ function createPlayer(videoId) {
 }
 
 function applyPlaybackRate() {
-  if (!state.playerReady || !state.player?.setPlaybackRate || !elements.playbackRate) {
+  if (!elements.playbackRate) {
     return;
   }
 
   const rate = Number(elements.playbackRate.value || 1);
   if (Number.isFinite(rate) && rate > 0) {
-    state.player.setPlaybackRate(rate);
+    setPlayerPlaybackRate(rate);
   }
 }
 

@@ -1145,8 +1145,13 @@ select {
   gap: 10px;
 }
 
-.heargap-control-row {
-  grid-template-columns: 1fr 1.25fr 1fr;
+.heargap-control-row-play,
+.heargap-control-row-secondary {
+  grid-template-columns: 1fr;
+}
+
+.heargap-control-row-nav {
+  grid-template-columns: 1fr 1fr;
 }
 
 .heargap-control-row-secondary {
@@ -1924,8 +1929,8 @@ select {
     border-radius: 0;
   }
 
-  .heargap-control-row {
-    grid-template-columns: 1fr 1fr 1fr;
+  .heargap-control-row-nav {
+    grid-template-columns: 1fr 1fr;
   }
 
   .heargap-original {
