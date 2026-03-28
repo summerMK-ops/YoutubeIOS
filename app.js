@@ -67,6 +67,8 @@ const state = {
   heargapIteration: 0,
   heargapPlaying: false,
   heargapPausedAt: null,
+  heargapPauseAfterCueEnd: false,
+  heargapPauseCueEnd: 0,
   heargapLoopTimer: null,
   heargapStopTimer: null,
   heargapMonitorTimer: null,
@@ -632,6 +634,8 @@ function stopHearGapPlayback(shouldPause = true, preservePause = false) {
     state.player.pauseVideo();
   }
   state.heargapPlaying = false;
+  state.heargapPauseAfterCueEnd = false;
+  state.heargapPauseCueEnd = 0;
   if (!preservePause) {
     state.heargapPausedAt = null;
     state.heargapIteration = 0;
@@ -658,7 +662,6 @@ function playHearGapCue() {
   const rate = applyHearGapPlaybackRate();
   const start = Math.max(0, Number(cue.start || 0) - 0.5);
   const end = Number(cue.end || cue.start || 0);
-  const loopCount = getHearGapLoopCount();
   const stopAt = Math.max(start, end + 0.5);
   const settleAt = Math.max(start, end);
   const initialStart = (
@@ -678,7 +681,7 @@ function playHearGapCue() {
     state.heargapPausedAt = null;
     state.heargapIteration += 1;
 
-    if (state.heargapIteration < loopCount) {
+    if (state.heargapIteration < getHearGapLoopCount()) {
       state.heargapLoopTimer = window.setTimeout(() => {
         playOnce(start);
       }, 300);
@@ -741,8 +744,21 @@ function stepHearGapCue(delta) {
 }
 
 function openHearGapSheet() {
+  const activeCue = getActiveCue();
   state.heargapOpen = true;
   state.heargapCueIndex = state.activeIndex;
+  if (
+    activeCue
+    && state.playerReady
+    && state.player?.getPlayerState
+    && state.player.getPlayerState() === window.YT?.PlayerState?.PLAYING
+  ) {
+    state.heargapPauseAfterCueEnd = true;
+    state.heargapPauseCueEnd = Number(activeCue.end || 0);
+  } else {
+    state.heargapPauseAfterCueEnd = false;
+    state.heargapPauseCueEnd = 0;
+  }
   renderHearGapSheet();
   elements.heargapBackdrop?.classList.remove("hidden");
   elements.heargapSheet?.classList.remove("hidden");
@@ -2304,6 +2320,19 @@ function startSyncLoop() {
     }
 
     const playerState = state.player.getPlayerState();
+    if (
+      state.heargapPauseAfterCueEnd
+      && playerState === window.YT?.PlayerState?.PLAYING
+      && state.player?.getCurrentTime
+    ) {
+      const currentTime = Number(state.player.getCurrentTime() || 0);
+      if (currentTime >= Math.max(0, state.heargapPauseCueEnd)) {
+        state.player.pauseVideo();
+        state.heargapPauseAfterCueEnd = false;
+        state.heargapPauseCueEnd = 0;
+      }
+    }
+
     if (state.heargapPlaying) {
       updatePlaybackButton();
       updateTransportUI();
