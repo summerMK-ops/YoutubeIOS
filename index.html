@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260327-3">
+  <link rel="stylesheet" href="./styles.css?v=20260328-2">
 </head>
 <body class="font-small">
   <div class="app-shell">
@@ -49,7 +49,6 @@
         <div class="current-subtitle-box current-copy-cache" aria-hidden="true">
           <div class="current-subtitle-actions">
             <button id="ai-search-current-inline" class="ghost current-subtitle-action current-subtitle-action-ai" type="button" aria-label="Open ChatGPT">AI</button>
-            <button id="open-heargap-sheet" class="ghost current-subtitle-action current-subtitle-action-heargap" type="button" aria-label="Open HearGap">HG</button>
             <button id="copy-current-group" class="ghost current-subtitle-action current-subtitle-action-group-copy" type="button" aria-label="Copy current sentence group" data-label-default="&#182;" data-feedback-label="&#10003;">&#182;</button>
             <button id="save-current-line" class="ghost current-subtitle-action current-subtitle-action-save" type="button" aria-label="Save current English line">&#10022;</button>
             <button id="copy-current-english" class="ghost current-subtitle-action" type="button" aria-label="Copy current English line" data-label-default="&#x29C9;" data-feedback-label="&#10003;">&#x29C9;</button>
@@ -77,6 +76,7 @@
         </div>
 
         <div class="player-secondary-controls compact-secondary-controls">
+          <button id="open-heargap-sheet" class="ghost compact-icon-button compact-heargap-button" type="button" aria-label="Open HearGap">HearGap</button>
           <button id="ai-search-current" class="ghost compact-icon-button compact-ai-button" type="button" aria-label="Open ChatGPT">AI検索</button>
           <button id="channel-videos-toggle" class="ghost compact-icon-button" type="button" aria-label="Open current channel videos">CH</button>
           <button id="toggle-favorite-channel" class="ghost compact-icon-button compact-channel-favorite-button" type="button" aria-label="Favorite current channel">CH&#9734;</button>
@@ -354,7 +354,7 @@
     </nav>
   </div>
 
-  <script src="./app.js?v=20260328-1"></script>
+  <script src="./app.js?v=20260328-2"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {

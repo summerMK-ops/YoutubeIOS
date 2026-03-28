@@ -523,6 +523,13 @@ select {
   border-color: rgba(125, 246, 255, 0.32);
 }
 
+.compact-heargap-button {
+  min-width: 92px;
+  color: #ffd348;
+  border-color: rgba(255, 211, 72, 0.32);
+  background: rgba(255, 211, 72, 0.08);
+}
+
 .compact-speed-control {
   min-width: 96px;
 }
