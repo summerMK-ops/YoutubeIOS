@@ -452,56 +452,53 @@ function buildHearGapVisual(text) {
     return escapeHtml("No subtitles yet.");
   }
 
-  const tokens = source.match(/[A-Za-z']+|\d+(?:[.:]\d+)*|[^A-Za-z\d\s]+|\s+/g) || [];
+  const rawTokens = source.match(/[A-Za-z']+|\d+(?:[.:]\d+)*|[^A-Za-z\d\s]+|\s+/g) || [];
+  const enrichedTokens = rawTokens.map((token) => ({
+    value: token,
+    isWord: /[A-Za-z']/.test(token),
+    normalized: /[A-Za-z']/.test(token) ? normalizeHearGapWord(token) : ""
+  }));
+  const wordIndexes = enrichedTokens
+    .map((token, index) => (token.isWord ? index : -1))
+    .filter((index) => index >= 0);
 
-  const parts = [];
-  for (let index = 0; index < tokens.length; index += 1) {
-    const current = tokens[index];
-    if (/^\s+$/.test(current)) {
-      parts.push(current);
-      continue;
-    }
-
-    if (!/[A-Za-z']/.test(current)) {
-      parts.push(escapeHtml(current));
-      continue;
-    }
-
-    const normalized = normalizeHearGapWord(current);
-    const nextWord = tokens.slice(index + 1).find((token) => /[A-Za-z']/.test(token));
-    const nextNormalized = normalizeHearGapWord(nextWord || "");
+  for (let wordOrder = 0; wordOrder < wordIndexes.length; wordOrder += 1) {
+    const tokenIndex = wordIndexes[wordOrder];
+    const current = enrichedTokens[tokenIndex];
+    const nextTokenIndex = wordIndexes[wordOrder + 1];
+    const next = typeof nextTokenIndex === "number" ? enrichedTokens[nextTokenIndex] : null;
     const classes = ["heargap-word"];
 
-    if (HEARGAP_WEAK_WORDS.has(normalized)) {
+    if (HEARGAP_WEAK_WORDS.has(current.normalized)) {
       classes.push("heargap-weak");
     } else {
       classes.push("heargap-stress");
     }
 
-    let content = escapeHtml(current);
-    const hasFinalTD = /[td]$/i.test(current);
+    let content = escapeHtml(current.value);
+    const hasFinalTD = /[td]$/i.test(current.value);
     if (hasFinalTD) {
-      const stem = escapeHtml(current.slice(0, -1));
-      const finalChar = escapeHtml(current.slice(-1));
-      if (!nextWord || !/^[aeiou]/i.test(nextNormalized)) {
+      const stem = escapeHtml(current.value.slice(0, -1));
+      const finalChar = escapeHtml(current.value.slice(-1));
+      if (!next || !/^[aeiou]/i.test(next.normalized)) {
         content = `${stem}<span class="heargap-omit">(${finalChar})</span>`;
       } else {
         content = `${stem}<span class="heargap-flap">${finalChar}</span>`;
       }
     }
 
-    parts.push(`<span class="${classes.join(" ")}">${content}</span>`);
-    if (!nextWord) {
-      continue;
+    current.rendered = `<span class="${classes.join(" ")}">${content}</span>`;
+    if (next && HEARGAP_LINK_PAIRS.has(`${current.normalized} ${next.normalized}`)) {
+      current.linkAfter = '<span class="heargap-link">~</span>';
     }
-
-    const nextIndex = tokens.indexOf(nextWord, index + 1);
-    const between = tokens.slice(index + 1, nextIndex).join("");
-    const pair = `${normalized} ${nextNormalized}`;
-    parts.push(HEARGAP_LINK_PAIRS.has(pair) ? `<span class="heargap-link">~</span>${between}` : between);
   }
 
-  return parts.join("");
+  return enrichedTokens.map((token) => {
+    if (!token.isWord) {
+      return escapeHtml(token.value);
+    }
+    return `${token.rendered || escapeHtml(token.value)}${token.linkAfter || ""}`;
+  }).join("");
 }
 
 function getHearGapCue() {
