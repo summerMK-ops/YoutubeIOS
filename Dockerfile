@@ -6,7 +6,9 @@ ENV PORT=7860
 
 WORKDIR /app
 
-RUN apt-get update \
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get update \
   && apt-get install -y --no-install-recommends ffmpeg python3 python3-pip \
   && pip3 install --no-cache-dir --break-system-packages yt-dlp \
   && apt-get clean \
