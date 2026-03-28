@@ -2788,19 +2788,44 @@ async function translateCueChunk(cues, options = {}) {
   });
 }
 
-function mergeTranslatedChunk(currentSubtitles, translatedChunk, startIndex) {
+function buildTranslationGroups(subtitles) {
+  const { groups } = buildCueGroups(subtitles);
+  return groups.map((group) => {
+    const cueIndexes = Array.isArray(group.cueIndexes) ? group.cueIndexes : [];
+    const cues = cueIndexes
+      .map((index) => subtitles[index])
+      .filter(Boolean);
+
+    return {
+      start: group.start,
+      end: group.end,
+      cueIndexes,
+      text: cues.map((cue) => cue.text || "").join(" ").replace(/\s+/g, " ").trim(),
+      translation: ""
+    };
+  }).filter((group) => group.text);
+}
+
+function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartIndex, translationGroups) {
   const nextSubtitles = currentSubtitles.slice();
-  translatedChunk.forEach((cue, index) => {
-    const targetIndex = startIndex + index;
-    const currentCue = nextSubtitles[targetIndex];
-    if (!currentCue) {
+  translatedGroups.forEach((group, index) => {
+    const targetGroup = translationGroups[groupStartIndex + index];
+    if (!targetGroup?.cueIndexes?.length) {
       return;
     }
 
-    nextSubtitles[targetIndex] = {
-      ...currentCue,
-      translation: cue?.translation || currentCue.translation || ""
-    };
+    const translation = group?.translation || "";
+    targetGroup.cueIndexes.forEach((cueIndex) => {
+      const currentCue = nextSubtitles[cueIndex];
+      if (!currentCue) {
+        return;
+      }
+
+      nextSubtitles[cueIndex] = {
+        ...currentCue,
+        translation: translation || currentCue.translation || ""
+      };
+    });
   });
   return nextSubtitles;
 }
@@ -2809,7 +2834,8 @@ async function translateSubtitlesProgressively(videoId, requestId, basePayload, 
   const requestedLanguage = options.language || state.translationLanguage;
   const requestedProvider = options.provider || state.translationProvider;
   const baseSubtitles = Array.isArray(basePayload?.subtitles) ? basePayload.subtitles : [];
-  const totalChunks = Math.ceil(baseSubtitles.length / TRANSLATION_CHUNK_SIZE);
+  const translationGroups = buildTranslationGroups(baseSubtitles);
+  const totalChunks = Math.ceil(translationGroups.length / TRANSLATION_CHUNK_SIZE);
 
   for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
     if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
@@ -2817,13 +2843,13 @@ async function translateSubtitlesProgressively(videoId, requestId, basePayload, 
     }
 
     const startIndex = chunkIndex * TRANSLATION_CHUNK_SIZE;
-    const cues = baseSubtitles.slice(startIndex, startIndex + TRANSLATION_CHUNK_SIZE).map((cue) => ({
-      start: cue.start,
-      end: cue.end,
-      text: cue.text,
+    const groupChunk = translationGroups.slice(startIndex, startIndex + TRANSLATION_CHUNK_SIZE).map((group) => ({
+      start: group.start,
+      end: group.end,
+      text: group.text,
       translation: ""
     }));
-    const translatedPayload = await translateCueChunk(cues, {
+    const translatedPayload = await translateCueChunk(groupChunk, {
       targetLanguage: requestedLanguage,
       sourceLanguage: "en",
       provider: requestedProvider
@@ -2832,13 +2858,18 @@ async function translateSubtitlesProgressively(videoId, requestId, basePayload, 
       return;
     }
 
-    const mergedSubtitles = mergeTranslatedChunk(state.subtitles, translatedPayload.subtitles || [], startIndex);
+    const mergedSubtitles = mergeTranslatedGroups(
+      state.subtitles,
+      translatedPayload.subtitles || [],
+      startIndex,
+      translationGroups
+    );
     const hasMoreChunks = chunkIndex < totalChunks - 1;
     state.translationPending = hasMoreChunks;
     updateSubtitleTranslations(
       mergedSubtitles,
       hasMoreChunks
-        ? `${basePayload.trackLabel} を読み込みました。先頭から翻訳中です... ${Math.min(startIndex + TRANSLATION_CHUNK_SIZE, baseSubtitles.length)}/${baseSubtitles.length}`
+        ? `${basePayload.trackLabel} を読み込みました。句読点ごとに翻訳中です... ${Math.min(startIndex + TRANSLATION_CHUNK_SIZE, translationGroups.length)}/${translationGroups.length}`
         : buildTranscriptStatus({ ...basePayload, subtitles: mergedSubtitles }, requestedLanguage)
     );
   }
