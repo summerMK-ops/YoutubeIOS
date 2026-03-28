@@ -590,7 +590,7 @@ function playHearGapCue() {
   const start = Number(cue.start || 0);
   const end = Number(cue.end || cue.start || 0);
   const loopCount = getHearGapLoopCount();
-  const stopAt = Math.max(start, end + 0.03);
+  const stopAt = Math.max(start, end + 0.5);
   const settleAt = Math.max(start, end);
   const initialStart = (
     typeof state.heargapPausedAt === "number"
