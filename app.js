@@ -2821,7 +2821,15 @@ function splitGroupedTranslation(translation, originalTexts) {
     return Array.from({ length: expectedCount }, () => "");
   }
 
-  const normalizePart = (part) => String(part || "").replace(/\s+/g, " ").trim();
+  const stripDisplayMarkers = (value) =>
+    String(value || "")
+      .replace(/【\d+】\s*/g, "")
+      .replace(/\[\[(\d+)\]\]\s*/g, "")
+      .replace(/__LINE_\d+__\s*/g, "")
+      .replace(/^\[\d+\]\s*/g, "")
+      .replace(/^\d+[\.\):：]\s*/g, "")
+      .trim();
+  const normalizePart = (part) => stripDisplayMarkers(String(part || "").replace(/\s+/g, " ").trim());
   const lineWeights = sourceTexts.map((text) => Math.max(1, normalizePart(text).length));
   const sentenceParts = normalized
     .split(/(?<=[。！？!?])\s+|\n+/)
@@ -2874,7 +2882,7 @@ function splitGroupedTranslation(translation, originalTexts) {
         parts[index] = normalizePart(match[4]);
       }
     });
-    const fallback = normalized.replace(/\s+/g, " ").trim();
+    const fallback = normalizePart(normalized);
     if (sentenceParts.length === expectedCount) {
       return parts.map((part, index) => part || sentenceParts[index] || fallback);
     }
@@ -2915,7 +2923,7 @@ function splitGroupedTranslation(translation, originalTexts) {
     return distributeSequentialParts(lineParts);
   }
 
-  return splitByWeights(normalized);
+  return splitByWeights(normalized).map(normalizePart);
 }
 
 function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartIndex, translationGroups) {
