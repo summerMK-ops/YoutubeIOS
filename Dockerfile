@@ -10,6 +10,9 @@ ENV HOST=0.0.0.0
 ENV PORT=7860
 ENV YT_DLP_BIN=/usr/local/bin/yt-dlp
 ENV LD_LIBRARY_PATH=/usr/local/lib
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /app
 
@@ -23,6 +26,7 @@ COPY --from=yt_dlp_stage /usr/local/lib/libpython3.so /usr/local/lib/libpython3.
 COPY --from=yt_dlp_stage /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/libssl.so.3
 COPY --from=yt_dlp_stage /usr/lib/x86_64-linux-gnu/libcrypto.so.3 /usr/lib/x86_64-linux-gnu/libcrypto.so.3
 COPY --from=yt_dlp_stage /etc/ssl/certs /etc/ssl/certs
+COPY --from=yt_dlp_stage /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=yt_dlp_stage /usr/local/share/ca-certificates /usr/local/share/ca-certificates
 
 COPY package.json package-lock.json ./
