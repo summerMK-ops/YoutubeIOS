@@ -2840,6 +2840,23 @@ function splitGroupedTranslation(translation, originalTexts) {
     .map(normalizePart)
     .filter(Boolean);
 
+  const refineClauseParts = (parts) =>
+    parts.flatMap((part) => {
+      const normalizedPart = normalizePart(part);
+      if (!normalizedPart) {
+        return [];
+      }
+
+      const topicMatch = normalizedPart.match(/^(.+?[はがをにへでと])、(.+)$/);
+      if (!topicMatch) {
+        return [normalizedPart];
+      }
+
+      const head = normalizePart(`${topicMatch[1]}、`);
+      const tail = normalizePart(topicMatch[2]);
+      return [head, tail].filter(Boolean);
+    });
+
   const distributeSequentialParts = (parts) => {
     if (!parts.length) {
       return null;
@@ -2938,10 +2955,10 @@ function splitGroupedTranslation(translation, originalTexts) {
       return Array.from({ length: expectedCount }, () => "");
     }
 
-    const localClauseParts = cleaned
+    const localClauseParts = refineClauseParts(cleaned
       .split(/(?<=、)\s*|(?<=[。！？!?])\s*|\n+/)
       .map(normalizePart)
-      .filter(Boolean);
+      .filter(Boolean));
     if (localClauseParts.length === expectedCount) {
       return localClauseParts;
     }
