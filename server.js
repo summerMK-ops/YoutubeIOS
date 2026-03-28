@@ -428,7 +428,31 @@ async function translateTextWithGoogle(text, targetLanguage, sourceLanguage = ""
   const translated = Array.isArray(payload?.[0])
     ? payload[0].map((part) => part?.[0] || "").join("")
     : "";
-  return normalizeCueText(translated);
+  return translated;
+}
+
+function normalizeTranslatedText(text) {
+  return decodeHtmlEntities(String(text || ""))
+    .replace(/\s+/g, " ")
+    .replace(/[\u200b-\u200d\ufeff]/g, "")
+    .trim();
+}
+
+function extractDelimitedTranslations(text, expectedCount) {
+  const normalized = String(text || "").replace(/\r/g, "");
+  const matches = Array.from(normalized.matchAll(/⟪(\d+)⟫([\s\S]*?)⟪\/\1⟫/g));
+  if (!matches.length) {
+    return [];
+  }
+
+  const parts = Array.from({ length: expectedCount }, () => "");
+  for (const match of matches) {
+    const index = Number(match[1]) - 1;
+    if (index >= 0 && index < expectedCount) {
+      parts[index] = normalizeCueText(match[2] || "");
+    }
+  }
+  return parts;
 }
 
 async function translateTextWithDeepL(text, targetLanguage, sourceLanguage = "") {
@@ -459,6 +483,44 @@ async function translateTextWithDeepL(text, targetLanguage, sourceLanguage = "")
 
   const payload = await response.json();
   return normalizeCueText(payload?.translations?.[0]?.text || "");
+}
+
+async function translateGroupedCuesWithGoogle(cues, targetLanguage, sourceLanguage = "") {
+  const translated = [];
+  for (const cue of cues) {
+    const lines = Array.isArray(cue?.lines) ? cue.lines.map((line) => normalizeCueText(line)).filter(Boolean) : [];
+    if (!lines.length) {
+      translated.push({
+        ...cue,
+        translations: [],
+        translation: cue.translation || ""
+      });
+      continue;
+    }
+
+    const taggedSource = lines
+      .map((line, index) => `⟪${index + 1}⟫${line}⟪/${index + 1}⟫`)
+      .join("\n");
+    const rawTranslation = await translateTextWithGoogle(taggedSource, targetLanguage, sourceLanguage);
+    const extractedTranslations = extractDelimitedTranslations(rawTranslation, lines.length);
+
+    let normalizedTranslations = extractedTranslations;
+    if (!normalizedTranslations.length || !normalizedTranslations.some(Boolean)) {
+      normalizedTranslations = [];
+      for (const line of lines) {
+        const singleLineTranslation = await translateTextWithGoogle(line, targetLanguage, sourceLanguage);
+        normalizedTranslations.push(normalizeCueText(singleLineTranslation));
+      }
+    }
+
+    translated.push({
+      ...cue,
+      translations: normalizedTranslations,
+      translation: normalizeTranslatedText(normalizedTranslations.join(" "))
+    });
+  }
+
+  return translated;
 }
 
 async function translateBatchWithOpenAI(cues, targetLanguage, sourceLanguage = "") {
@@ -629,7 +691,7 @@ async function translateCues(cues, targetLanguage, sourceLanguage = "", provider
       try {
         const translation = provider === "deepl"
           ? await translateTextWithDeepL(cue.text, targetLanguage, sourceLanguage)
-          : await translateTextWithGoogle(cue.text, targetLanguage, sourceLanguage);
+          : normalizeCueText(await translateTextWithGoogle(cue.text, targetLanguage, sourceLanguage));
         results[currentIndex] = {
           ...cue,
           translation
@@ -2284,13 +2346,15 @@ async function handleTranslateCuesApi(request, response) {
       return;
     }
 
-    const shouldUseGroupedOpenAI =
-      normalizedCues.some((cue) => Array.isArray(cue.lines) && cue.lines.length > 1)
-      && Boolean(process.env.OPENAI_API_KEY);
-
-    const subtitles = shouldUseGroupedOpenAI
-      ? await translateGroupedBatchWithOpenAI(normalizedCues, targetLanguage, sourceLanguage)
-      : await translateCues(normalizedCues, targetLanguage, sourceLanguage, provider);
+    const hasGroupedLines = normalizedCues.some((cue) => Array.isArray(cue.lines) && cue.lines.length > 1);
+    let subtitles;
+    if (hasGroupedLines && provider === "openai" && process.env.OPENAI_API_KEY) {
+      subtitles = await translateGroupedBatchWithOpenAI(normalizedCues, targetLanguage, sourceLanguage);
+    } else if (hasGroupedLines && provider === "google") {
+      subtitles = await translateGroupedCuesWithGoogle(normalizedCues, targetLanguage, sourceLanguage);
+    } else {
+      subtitles = await translateCues(normalizedCues, targetLanguage, sourceLanguage, provider);
+    }
     sendJson(response, 200, { subtitles });
   } catch (error) {
     sendJson(response, 500, {
