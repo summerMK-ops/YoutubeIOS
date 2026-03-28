@@ -2801,7 +2801,7 @@ function buildTranslationGroups(subtitles) {
       end: group.end,
       cueIndexes,
       text: cues
-        .map((cue, index) => `[[${index + 1}]] ${(cue.text || "").trim()}`)
+        .map((cue, index) => `__LINE_${index + 1}__ ${(cue.text || "").trim()}`)
         .join("\n")
         .trim(),
       translation: ""
@@ -2815,17 +2815,25 @@ function splitGroupedTranslation(translation, expectedCount) {
     return Array.from({ length: expectedCount }, () => "");
   }
 
-  const markerRegex = /\[\[(\d+)\]\]\s*([\s\S]*?)(?=(?:\n?\s*\[\[\d+\]\])|$)/g;
+  const markerRegex = /(?:__LINE_(\d+)__|\[\[(\d+)\]\])\s*([\s\S]*?)(?=(?:\n?\s*(?:__LINE_\d+__|\[\[\d+\]\]))|$)/g;
   const markerMatches = Array.from(normalized.matchAll(markerRegex));
   if (markerMatches.length) {
     const parts = Array.from({ length: expectedCount }, () => "");
     markerMatches.forEach((match) => {
-      const index = Number(match[1]) - 1;
+      const index = Number(match[1] || match[2]) - 1;
       if (index >= 0 && index < expectedCount) {
-        parts[index] = String(match[2] || "").replace(/\s+/g, " ").trim();
+        parts[index] = String(match[3] || "").replace(/\s+/g, " ").trim();
       }
     });
-    return parts;
+    const fallback = normalized.replace(/\s+/g, " ").trim();
+    return parts.map((part, index) => {
+      if (part) {
+        return part;
+      }
+      const previous = parts.slice(0, index).reverse().find(Boolean);
+      const next = parts.slice(index + 1).find(Boolean);
+      return previous || next || fallback;
+    });
   }
 
   const lineParts = normalized
@@ -2836,10 +2844,8 @@ function splitGroupedTranslation(translation, expectedCount) {
     return lineParts;
   }
 
-  return [
-    normalized.replace(/\s+/g, " ").trim(),
-    ...Array.from({ length: Math.max(0, expectedCount - 1) }, () => "")
-  ];
+  const fallback = normalized.replace(/\s+/g, " ").trim();
+  return Array.from({ length: expectedCount }, (_value, index) => lineParts[index] || fallback);
 }
 
 function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartIndex, translationGroups) {
