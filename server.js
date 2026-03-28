@@ -455,6 +455,36 @@ function extractDelimitedTranslations(text, expectedCount) {
   return parts;
 }
 
+function buildStableTagMap(lineCount) {
+  const entries = [];
+  for (let index = 0; index < lineCount; index += 1) {
+    const lineNumber = index + 1;
+    entries.push({
+      startTag: `⟪${lineNumber}⟫`,
+      endTag: `⟪/${lineNumber}⟫`,
+      startToken: `__TAG${lineNumber}_START__`,
+      endToken: `__TAG${lineNumber}_END__`
+    });
+  }
+  return entries;
+}
+
+function replaceStableTags(text, tagMap, direction = "toToken") {
+  let nextText = String(text || "");
+  for (const entry of tagMap) {
+    if (direction === "toToken") {
+      nextText = nextText
+        .replaceAll(entry.startTag, entry.startToken)
+        .replaceAll(entry.endTag, entry.endToken);
+    } else {
+      nextText = nextText
+        .replaceAll(entry.startToken, entry.startTag)
+        .replaceAll(entry.endToken, entry.endTag);
+    }
+  }
+  return nextText;
+}
+
 async function translateTextWithDeepL(text, targetLanguage, sourceLanguage = "") {
   const apiKey = process.env.DEEPL_API_KEY || "";
   if (!apiKey) {
@@ -498,11 +528,14 @@ async function translateGroupedCuesWithGoogle(cues, targetLanguage, sourceLangua
       continue;
     }
 
+    const tagMap = buildStableTagMap(lines.length);
     const taggedSource = lines
       .map((line, index) => `⟪${index + 1}⟫${line}⟪/${index + 1}⟫`)
       .join("\n");
-    const rawTranslation = await translateTextWithGoogle(taggedSource, targetLanguage, sourceLanguage);
-    const extractedTranslations = extractDelimitedTranslations(rawTranslation, lines.length);
+    const tokenizedSource = replaceStableTags(taggedSource, tagMap, "toToken");
+    const rawTranslation = await translateTextWithGoogle(tokenizedSource, targetLanguage, sourceLanguage);
+    const restoredTranslation = replaceStableTags(rawTranslation, tagMap, "toTag");
+    const extractedTranslations = extractDelimitedTranslations(restoredTranslation, lines.length);
 
     let normalizedTranslations = extractedTranslations;
     if (!normalizedTranslations.length || !normalizedTranslations.some(Boolean)) {
