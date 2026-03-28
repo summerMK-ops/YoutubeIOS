@@ -542,6 +542,7 @@ function playHearGapCue() {
   const start = Number(cue.start || 0);
   const end = Number(cue.end || cue.start || 0);
   const loopCount = getHearGapLoopCount();
+  const stopAt = Math.max(start, end - 0.08);
   const initialStart = (
     typeof state.heargapPausedAt === "number"
     && state.heargapPausedAt > start
@@ -568,9 +569,10 @@ function playHearGapCue() {
       }
 
       const currentTime = Number(state.player.getCurrentTime() || 0);
-      if (currentTime >= end - 0.04) {
+      if (currentTime >= stopAt) {
         clearHearGapPlaybackTimers();
         state.player.pauseVideo();
+        state.player.seekTo(stopAt, true);
         state.heargapPausedAt = null;
         state.heargapIteration += 1;
 
@@ -2138,6 +2140,12 @@ function startSyncLoop() {
     }
 
     const playerState = state.player.getPlayerState();
+    if (state.heargapPlaying) {
+      updatePlaybackButton();
+      updateTransportUI();
+      return;
+    }
+
     if (playerState === window.YT?.PlayerState?.PLAYING || playerState === window.YT?.PlayerState?.PAUSED) {
       syncActiveCue();
       updatePlaybackButton();
