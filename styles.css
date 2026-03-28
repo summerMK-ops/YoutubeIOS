@@ -477,6 +477,10 @@ select {
   font-size: 1.05rem;
 }
 
+.current-subtitle-action-heargap {
+  color: #ffd348;
+}
+
 .control-panel {
   display: grid;
   gap: 14px;
@@ -992,6 +996,156 @@ select {
   background: rgba(4, 8, 14, 0.56);
   backdrop-filter: blur(8px);
   z-index: 40;
+}
+
+.heargap-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 8, 14, 0.58);
+  backdrop-filter: blur(10px);
+  z-index: 82;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.heargap-backdrop.is-open {
+  opacity: 1;
+}
+
+.heargap-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 83;
+  padding: 12px 16px calc(20px + env(safe-area-inset-bottom, 0));
+  border-radius: 28px 28px 0 0;
+  background:
+    radial-gradient(circle at top, rgba(255, 211, 72, 0.12), transparent 34%),
+    rgba(11, 16, 24, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.45);
+  transform: translateY(calc(100% + 20px));
+  transition: transform 220ms ease;
+}
+
+.heargap-sheet.is-open {
+  transform: translateY(0);
+}
+
+.heargap-sheet-handle {
+  width: 52px;
+  height: 5px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.heargap-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.heargap-sheet-header h3 {
+  margin: 4px 0 0;
+}
+
+.heargap-sheet-body {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.heargap-main {
+  display: grid;
+  gap: 10px;
+}
+
+.heargap-original,
+.heargap-heard-as,
+.heargap-kana,
+.heargap-ipa,
+.heargap-translation,
+.heargap-note {
+  margin: 0;
+}
+
+.heargap-original {
+  color: #ffffff;
+  font-size: 1.18rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.heargap-heard-as {
+  color: #ffd348;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.heargap-kana {
+  color: #ffb97a;
+  font-size: 0.98rem;
+}
+
+.heargap-ipa {
+  color: #9db2cf;
+  font-size: 0.92rem;
+}
+
+.heargap-translation {
+  color: #b8aec9;
+  font-size: 0.95rem;
+}
+
+.heargap-note {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #c8c1d5;
+  font-size: 0.9rem;
+}
+
+.heargap-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.heargap-tag {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1eef8;
+  font-size: 0.82rem;
+}
+
+.heargap-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.heargap-control-row,
+.heargap-control-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.heargap-timebox {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.heargap-timebox p {
+  margin: 6px 0 0;
+  color: #f3ecff;
+  font-weight: 600;
 }
 
 .dictionary-header {
@@ -1741,6 +1895,24 @@ select {
     width: auto;
     bottom: calc(86px + env(safe-area-inset-bottom, 0));
     max-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 104px);
+  }
+
+  .heargap-sheet {
+    padding: 10px 14px calc(18px + env(safe-area-inset-bottom, 0));
+    border-radius: 24px 24px 0 0;
+  }
+
+  .heargap-original {
+    font-size: 1.05rem;
+  }
+
+  .heargap-heard-as {
+    font-size: 1rem;
+  }
+
+  .heargap-control-row,
+  .heargap-control-grid {
+    grid-template-columns: 1fr;
   }
 
   .dictionary-meaning-line {

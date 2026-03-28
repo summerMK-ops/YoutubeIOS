@@ -59,7 +59,13 @@ const state = {
   dictionaryResumePlayback: false,
   transcriptRequestId: 0,
   isSeekingWithSlider: false,
-  initialBootstrapStarted: false
+  initialBootstrapStarted: false,
+  heargapOpen: false,
+  heargapLoopEnabled: true,
+  heargapLoopCount: 3,
+  heargapLoopTimer: null,
+  heargapStopTimer: null,
+  heargapResumePlayback: false
 };
 
 let youtubeIframeApiPromise = null;
@@ -201,6 +207,21 @@ const elements = {
   dictionaryPhonetic: document.getElementById("dictionary-phonetic"),
   dictionaryBody: document.getElementById("dictionary-body"),
   saveWord: document.getElementById("save-word"),
+  openHearGapSheet: document.getElementById("open-heargap-sheet"),
+  closeHearGapSheet: document.getElementById("close-heargap-sheet"),
+  heargapBackdrop: document.getElementById("heargap-backdrop"),
+  heargapSheet: document.getElementById("heargap-sheet"),
+  heargapOriginal: document.getElementById("heargap-original"),
+  heargapHeardAs: document.getElementById("heargap-heard-as"),
+  heargapKana: document.getElementById("heargap-kana"),
+  heargapIpa: document.getElementById("heargap-ipa"),
+  heargapTranslation: document.getElementById("heargap-translation"),
+  heargapTags: document.getElementById("heargap-tags"),
+  heargapNote: document.getElementById("heargap-note"),
+  heargapPlay: document.getElementById("heargap-play"),
+  heargapLoop: document.getElementById("heargap-loop"),
+  heargapRate: document.getElementById("heargap-rate"),
+  heargapRange: document.getElementById("heargap-range"),
   videoTitle: document.getElementById("video-title"),
   videoMeta: document.getElementById("video-meta"),
   aiSearchCurrent: document.getElementById("ai-search-current"),
@@ -214,6 +235,42 @@ const elements = {
   repeatStatus: document.getElementById("repeat-status"),
   repeatCurrentCue: document.getElementById("repeat-current-cue"),
   repeatCurrentGroup: document.getElementById("repeat-current-group")
+};
+
+const HEARGAP_TAG_OPTIONS = ["連結", "脱落", "弱形", "flap T", "省略", "強勢"];
+const HEARGAP_KANA_MAP = {
+  oh: "オウ",
+  yeah: "イェー",
+  quit: "クウィッ",
+  right: "ライト",
+  now: "ナウ",
+  what: "ワッ",
+  are: "アー",
+  you: "ユー",
+  doing: "ドゥーイン",
+  there: "ゼア",
+  theres: "ゼアズ",
+  some: "サム",
+  honey: "ハニー",
+  garlic: "ガーリック",
+  and: "ン"
+};
+const HEARGAP_IPA_MAP = {
+  oh: "oʊ",
+  yeah: "jɛə",
+  quit: "kwɪt",
+  right: "raɪt",
+  now: "naʊ",
+  what: "wʌt",
+  are: "ɑɚ",
+  you: "jə",
+  doing: "ˈduːɪŋ",
+  there: "ðer",
+  theres: "ðerz",
+  some: "səm",
+  honey: "ˈhʌni",
+  garlic: "ˈɡɑrlɪk",
+  and: "ən"
 };
 
 function escapeHtml(text) {
@@ -235,6 +292,246 @@ function setSubtitleStatus(message) {
 
 function setRepeatStatus(message) {
   elements.repeatStatus.textContent = message;
+}
+
+function normalizeHearGapWord(word) {
+  return String(word || "").toLowerCase().replace(/[^a-z']/g, "").replace(/'/g, "");
+}
+
+function fallbackHearGapKana(word) {
+  return String(word || "")
+    .toLowerCase()
+    .replace(/qu/g, "ク")
+    .replace(/th/g, "ズ")
+    .replace(/sh/g, "シュ")
+    .replace(/ch/g, "チ")
+    .replace(/ee/g, "イー")
+    .replace(/oo/g, "ウー")
+    .replace(/ou/g, "アウ")
+    .replace(/ow/g, "アウ")
+    .replace(/a/g, "ア")
+    .replace(/e/g, "エ")
+    .replace(/i/g, "イ")
+    .replace(/o/g, "オ")
+    .replace(/u/g, "ウ")
+    .replace(/b/g, "ブ")
+    .replace(/c/g, "ク")
+    .replace(/d/g, "ド")
+    .replace(/f/g, "フ")
+    .replace(/g/g, "グ")
+    .replace(/h/g, "ハ")
+    .replace(/j/g, "ジ")
+    .replace(/k/g, "ク")
+    .replace(/l/g, "ル")
+    .replace(/m/g, "ム")
+    .replace(/n/g, "ン")
+    .replace(/p/g, "プ")
+    .replace(/r/g, "ル")
+    .replace(/s/g, "ス")
+    .replace(/t/g, "ト")
+    .replace(/v/g, "ヴ")
+    .replace(/w/g, "ウ")
+    .replace(/y/g, "イ")
+    .replace(/z/g, "ズ");
+}
+
+function fallbackHearGapIpa(word) {
+  return String(word || "")
+    .toLowerCase()
+    .replace(/qu/g, "kw")
+    .replace(/th/g, "θ")
+    .replace(/sh/g, "ʃ")
+    .replace(/ch/g, "tʃ")
+    .replace(/ee/g, "iː")
+    .replace(/oo/g, "uː")
+    .replace(/ou/g, "aʊ")
+    .replace(/ow/g, "aʊ")
+    .replace(/a/g, "æ")
+    .replace(/e/g, "e")
+    .replace(/i/g, "ɪ")
+    .replace(/o/g, "ɑ")
+    .replace(/u/g, "ʌ");
+}
+
+function buildHearGapData(cue) {
+  const text = String(cue?.text || "").trim();
+  const translation = String(cue?.translation || "").trim();
+  const tokens = text
+    .replace(/([a-zA-Z])([,!?;:])([a-zA-Z])/g, "$1 $2 $3")
+    .replace(/[^a-zA-Z0-9'\s]/g, " ")
+    .split(/\s+/)
+    .map(normalizeHearGapWord)
+    .filter(Boolean);
+
+  const heardTokens = [];
+  const kanaTokens = [];
+  const ipaTokens = [];
+  const tags = [];
+  const notes = [];
+
+  for (let index = 0; index < tokens.length; ) {
+    const first = tokens[index];
+    const second = tokens[index + 1];
+
+    if (first === "right" && second === "now") {
+      heardTokens.push("right now");
+      kanaTokens.push("ライナウ");
+      ipaTokens.push("raɪt naʊ");
+      tags.push("連結");
+      notes.push("right now が切れずにまとまって聞こえる。");
+      index += 2;
+      continue;
+    }
+
+    if (first === "what" && second === "are" && tokens[index + 2] === "you") {
+      heardTokens.push("whaddaya");
+      kanaTokens.push("ワダヤ");
+      ipaTokens.push("wʌɾəjə");
+      tags.push("連結", "弱形", "脱落");
+      notes.push("what are you が一塊で崩れて聞こえる。");
+      index += 3;
+      continue;
+    }
+
+    let heardWord = first;
+    let kanaWord = HEARGAP_KANA_MAP[first] || fallbackHearGapKana(first);
+    let ipaWord = HEARGAP_IPA_MAP[first] || fallbackHearGapIpa(first);
+
+    if (first === "you") {
+      heardWord = "ya";
+      kanaWord = "ヤ";
+      ipaWord = "jə";
+      tags.push("弱形");
+      notes.push("you が弱く ヤ に近づく。");
+    } else if (first === "and") {
+      heardWord = "n";
+      kanaWord = "ン";
+      ipaWord = "ən";
+      tags.push("弱形");
+      notes.push("and が短く弱くなる。");
+    }
+
+    heardTokens.push(heardWord);
+    kanaTokens.push(kanaWord);
+    ipaTokens.push(ipaWord);
+    index += 1;
+  }
+
+  if (/\b[a-z]+t [aeiou]/i.test(text) || /\bright\b/i.test(text)) {
+    tags.push("flap T");
+    notes.push("t/d が軽く弾かれて聞こえる可能性がある。");
+  }
+
+  return {
+    original: text || "No subtitles yet.",
+    heardAs: heardTokens.join(" ").trim(),
+    kana: kanaTokens.join(" ").trim(),
+    ipa: ipaTokens.join(" ").trim(),
+    translation: translation || "Translation will appear here.",
+    tags: [...new Set(tags)].filter(Boolean),
+    note: [...new Set(notes)].join(" "),
+    start: Number(cue?.start || 0),
+    end: Number(cue?.end || 0)
+  };
+}
+
+function renderHearGapSheet() {
+  const cue = getActiveCue();
+  const data = buildHearGapData(cue);
+
+  elements.heargapOriginal.textContent = data.original;
+  elements.heargapHeardAs.textContent = data.heardAs && data.heardAs.toLowerCase() !== data.original.toLowerCase() ? data.heardAs : "";
+  elements.heargapKana.textContent = data.kana || "";
+  elements.heargapIpa.textContent = data.ipa || "";
+  elements.heargapTranslation.textContent = data.translation;
+  elements.heargapRange.textContent = `${formatTime(data.start)} - ${formatTime(data.end)}`;
+  elements.heargapNote.textContent = data.note || "音の崩れ方をこの画面で確認できます。";
+  elements.heargapTags.innerHTML = data.tags.map((tag) => `<span class="heargap-tag">${escapeHtml(tag)}</span>`).join("");
+}
+
+function clearHearGapPlaybackTimers() {
+  if (state.heargapStopTimer) {
+    window.clearTimeout(state.heargapStopTimer);
+    state.heargapStopTimer = null;
+  }
+  if (state.heargapLoopTimer) {
+    window.clearTimeout(state.heargapLoopTimer);
+    state.heargapLoopTimer = null;
+  }
+}
+
+function stopHearGapPlayback(shouldPause = true) {
+  clearHearGapPlaybackTimers();
+  if (shouldPause && state.playerReady && state.player?.pauseVideo) {
+    state.player.pauseVideo();
+  }
+  if (elements.heargapPlay) {
+    elements.heargapPlay.textContent = "Play Line";
+  }
+}
+
+function playHearGapCue() {
+  const cue = getActiveCue();
+  if (!cue || !state.playerReady || !state.player?.seekTo || !state.player?.playVideo) {
+    return;
+  }
+
+  stopHearGapPlayback(false);
+  const rate = Number(elements.heargapRate?.value || 0.85);
+  const start = Number(cue.start || 0);
+  const end = Number(cue.end || cue.start || 0);
+  const durationMs = Math.max(((end - start) * 1000) / Math.max(rate, 0.1), 350);
+  let playCount = 0;
+
+  if (state.player?.setPlaybackRate) {
+    state.player.setPlaybackRate(rate);
+  }
+
+  const playOnce = () => {
+    state.player.seekTo(start, true);
+    state.player.playVideo();
+    if (elements.heargapPlay) {
+      elements.heargapPlay.textContent = "Playing...";
+    }
+
+    state.heargapStopTimer = window.setTimeout(() => {
+      state.player.pauseVideo();
+      playCount += 1;
+
+      if (state.heargapLoopEnabled && playCount < state.heargapLoopCount) {
+        state.heargapLoopTimer = window.setTimeout(playOnce, 300);
+        return;
+      }
+
+      stopHearGapPlayback(false);
+    }, durationMs);
+  };
+
+  playOnce();
+}
+
+function openHearGapSheet() {
+  state.heargapOpen = true;
+  renderHearGapSheet();
+  elements.heargapBackdrop?.classList.remove("hidden");
+  elements.heargapSheet?.classList.remove("hidden");
+  requestAnimationFrame(() => {
+    elements.heargapBackdrop?.classList.add("is-open");
+    elements.heargapSheet?.classList.add("is-open");
+  });
+}
+
+function closeHearGapSheet() {
+  state.heargapOpen = false;
+  stopHearGapPlayback();
+  elements.heargapBackdrop?.classList.remove("is-open");
+  elements.heargapSheet?.classList.remove("is-open");
+  window.setTimeout(() => {
+    if (!state.heargapOpen) {
+      elements.heargapBackdrop?.classList.add("hidden");
+      elements.heargapSheet?.classList.add("hidden");
+    }
+  }, 220);
 }
 
 function updateTransportUI() {
@@ -1545,6 +1842,34 @@ function updatePlaybackButton() {
   const playerState = state.player.getPlayerState();
   elements.togglePlayback.textContent = playerState === window.YT?.PlayerState?.PLAYING ? "一時停止" : "再生";
 }
+
+elements.openHearGapSheet?.addEventListener("click", () => {
+  openHearGapSheet();
+});
+
+elements.closeHearGapSheet?.addEventListener("click", () => {
+  closeHearGapSheet();
+});
+
+elements.heargapBackdrop?.addEventListener("click", () => {
+  closeHearGapSheet();
+});
+
+elements.heargapPlay?.addEventListener("click", () => {
+  playHearGapCue();
+});
+
+elements.heargapLoop?.addEventListener("click", () => {
+  state.heargapLoopEnabled = !state.heargapLoopEnabled;
+  elements.heargapLoop?.setAttribute("aria-pressed", String(state.heargapLoopEnabled));
+  elements.heargapLoop.textContent = state.heargapLoopEnabled ? "Loop x3" : "Loop Off";
+});
+
+elements.heargapRate?.addEventListener("change", () => {
+  if (state.heargapOpen) {
+    renderHearGapSheet();
+  }
+});
 
 function updateActiveCue(index, forceScroll = false) {
   if (state.activeIndex === index && !forceScroll) {
@@ -2900,6 +3225,9 @@ function updateActiveCue(index, forceScroll = false) {
   elements.currentTranslation.textContent = cue.translation || "No translation available.";
   bindWordLookup(elements.currentOriginal, cue.text);
   updateSaveCurrentLineButton();
+  if (state.heargapOpen) {
+    renderHearGapSheet();
+  }
 
   const activeNode = elements.transcriptList.querySelector(`[data-index="${index}"]`);
   if (!activeNode) {
