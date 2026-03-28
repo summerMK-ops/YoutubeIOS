@@ -2872,6 +2872,48 @@ function splitGroupedTranslation(translation, originalTexts) {
     });
   };
 
+  const redistributeText = (text) => {
+    const cleaned = normalizePart(text);
+    if (!cleaned) {
+      return Array.from({ length: expectedCount }, () => "");
+    }
+
+    const localClauseParts = cleaned
+      .split(/(?<=、)\s*|(?<=[。！？!?])\s*|\n+/)
+      .map(normalizePart)
+      .filter(Boolean);
+    if (localClauseParts.length === expectedCount) {
+      return localClauseParts;
+    }
+    if (localClauseParts.length > 1) {
+      return distributeSequentialParts(localClauseParts);
+    }
+
+    const localSentenceParts = cleaned
+      .split(/(?<=[。！？!?])\s+|\n+/)
+      .map(normalizePart)
+      .filter(Boolean);
+    if (localSentenceParts.length === expectedCount) {
+      return localSentenceParts;
+    }
+    if (localSentenceParts.length > 1) {
+      return distributeSequentialParts(localSentenceParts);
+    }
+
+    const localLineParts = cleaned
+      .split("\n")
+      .map(normalizePart)
+      .filter(Boolean);
+    if (localLineParts.length === expectedCount) {
+      return localLineParts;
+    }
+    if (localLineParts.length > 1) {
+      return distributeSequentialParts(localLineParts);
+    }
+
+    return splitByWeights(cleaned).map(normalizePart);
+  };
+
   const markerRegex = /(?:__LINE_(\d+)__|\[\[(\d+)\]\]|【(\d+)】)\s*([\s\S]*?)(?=(?:\n?\s*(?:__LINE_\d+__|\[\[\d+\]\]|【\d+】))|$)/g;
   const markerMatches = Array.from(normalized.matchAll(markerRegex));
   if (markerMatches.length) {
@@ -2882,18 +2924,11 @@ function splitGroupedTranslation(translation, originalTexts) {
         parts[index] = normalizePart(match[4]);
       }
     });
-    const fallback = normalizePart(normalized);
-    if (sentenceParts.length === expectedCount) {
-      return parts.map((part, index) => part || sentenceParts[index] || fallback);
+    const filledParts = parts.filter(Boolean);
+    if (filledParts.length === expectedCount) {
+      return parts;
     }
-    return parts.map((part, index) => {
-      if (part) {
-        return part;
-      }
-      const previous = parts.slice(0, index).reverse().find(Boolean);
-      const next = parts.slice(index + 1).find(Boolean);
-      return previous || next || fallback;
-    });
+    return redistributeText(filledParts.join(" "));
   }
 
   const lineParts = normalized
@@ -2907,23 +2942,7 @@ function splitGroupedTranslation(translation, originalTexts) {
     return sentenceParts;
   }
 
-  if (clauseParts.length === expectedCount) {
-    return clauseParts;
-  }
-
-  if (clauseParts.length > 1) {
-    return distributeSequentialParts(clauseParts);
-  }
-
-  if (sentenceParts.length > 1) {
-    return distributeSequentialParts(sentenceParts);
-  }
-
-  if (lineParts.length > 1) {
-    return distributeSequentialParts(lineParts);
-  }
-
-  return splitByWeights(normalized).map(normalizePart);
+  return redistributeText(normalized);
 }
 
 function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartIndex, translationGroups) {
