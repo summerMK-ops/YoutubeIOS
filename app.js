@@ -2801,7 +2801,7 @@ function buildTranslationGroups(subtitles) {
       end: group.end,
       cueIndexes,
       text: cues
-        .map((cue, index) => `【${index + 1}】 ${(cue.text || "").trim()}`)
+        .map((cue) => (cue.text || "").trim())
         .join("\n")
         .trim(),
       translation: ""
@@ -2872,6 +2872,66 @@ function splitGroupedTranslation(translation, originalTexts) {
     });
   };
 
+  const scoreClauseAgainstLine = (lineText, clause, lineIndex, clauseIndex, clauseCount) => {
+    const english = String(lineText || "").toLowerCase();
+    const japanese = normalizePart(clause);
+    const lineRatio = expectedCount > 1 ? lineIndex / (expectedCount - 1) : 0;
+    const clauseRatio = clauseCount > 1 ? clauseIndex / (clauseCount - 1) : 0;
+    let score = -Math.abs(lineRatio - clauseRatio) * 2;
+
+    if (/especially|particularly|in particular/.test(english) && /特に|とりわけ|なかでも/.test(japanese)) {
+      score += 6;
+    }
+    if (/\bthink\b|it'?s like|seems?/.test(english) && /思|考え|感じ|ようなもの|気が/.test(japanese)) {
+      score += 5;
+    }
+    if (/\bquit\b|stop|give up|leave/.test(english) && /辞|やめ|止|離/.test(japanese)) {
+      score += 5;
+    }
+    if (/\bkind\b|\bpeople\b|those|type/.test(english) && /人|タイプ|ような/.test(japanese)) {
+      score += 4;
+    }
+    if (/\bjob\b|work|career/.test(english) && /仕事|職|勤/.test(japanese)) {
+      score += 4;
+    }
+    if (/\bbig\b|huge|leap/.test(english) && /大き|飛躍/.test(japanese)) {
+      score += 4;
+    }
+    if (/\bgirl\b|woman|lady/.test(english) && /女|女性|女子/.test(japanese)) {
+      score += 3;
+    }
+
+    return score;
+  };
+
+  const assignClausesByAnchors = (clauses) => {
+    if (!clauses.length) {
+      return null;
+    }
+
+    const buckets = Array.from({ length: expectedCount }, () => []);
+    clauses.forEach((clause, clauseIndex) => {
+      let bestLineIndex = 0;
+      let bestScore = -Infinity;
+
+      sourceTexts.forEach((lineText, lineIndex) => {
+        const score = scoreClauseAgainstLine(lineText, clause, lineIndex, clauseIndex, clauses.length);
+        if (score > bestScore) {
+          bestScore = score;
+          bestLineIndex = lineIndex;
+        }
+      });
+
+      buckets[bestLineIndex].push(clause);
+    });
+
+    if (buckets.some((parts) => !parts.length)) {
+      return null;
+    }
+
+    return buckets.map((parts) => parts.join("").trim());
+  };
+
   const redistributeText = (text) => {
     const cleaned = normalizePart(text);
     if (!cleaned) {
@@ -2884,6 +2944,12 @@ function splitGroupedTranslation(translation, originalTexts) {
       .filter(Boolean);
     if (localClauseParts.length === expectedCount) {
       return localClauseParts;
+    }
+    if (localClauseParts.length > 1) {
+      const anchored = assignClausesByAnchors(localClauseParts);
+      if (anchored) {
+        return anchored;
+      }
     }
     if (localClauseParts.length > 1) {
       return distributeSequentialParts(localClauseParts);
