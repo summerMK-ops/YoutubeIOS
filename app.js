@@ -2801,7 +2801,7 @@ function buildTranslationGroups(subtitles) {
       end: group.end,
       cueIndexes,
       text: cues
-        .map((cue) => (cue.text || "").trim())
+        .map((cue, index) => `【${index + 1}】 ${(cue.text || "").trim()}`)
         .join("\n")
         .trim(),
       translation: ""
@@ -2864,14 +2864,14 @@ function splitGroupedTranslation(translation, originalTexts) {
     });
   };
 
-  const markerRegex = /(?:__LINE_(\d+)__|\[\[(\d+)\]\])\s*([\s\S]*?)(?=(?:\n?\s*(?:__LINE_\d+__|\[\[\d+\]\]))|$)/g;
+  const markerRegex = /(?:__LINE_(\d+)__|\[\[(\d+)\]\]|【(\d+)】)\s*([\s\S]*?)(?=(?:\n?\s*(?:__LINE_\d+__|\[\[\d+\]\]|【\d+】))|$)/g;
   const markerMatches = Array.from(normalized.matchAll(markerRegex));
   if (markerMatches.length) {
     const parts = Array.from({ length: expectedCount }, () => "");
     markerMatches.forEach((match) => {
-      const index = Number(match[1] || match[2]) - 1;
+      const index = Number(match[1] || match[2] || match[3]) - 1;
       if (index >= 0 && index < expectedCount) {
-        parts[index] = normalizePart(match[3]);
+        parts[index] = normalizePart(match[4]);
       }
     });
     const fallback = normalized.replace(/\s+/g, " ").trim();
