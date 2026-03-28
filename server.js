@@ -516,6 +516,83 @@ async function translateBatchWithOpenAI(cues, targetLanguage, sourceLanguage = "
   }));
 }
 
+async function translateGroupedBatchWithOpenAI(cues, targetLanguage, sourceLanguage = "") {
+  const apiKey = process.env.OPENAI_API_KEY || "";
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured");
+  }
+
+  const model = process.env.OPENAI_TRANSLATION_MODEL || "gpt-4.1-mini";
+  const languageName = String(targetLanguage || "ja");
+  const sourceName = sourceLanguage || "English";
+  const groups = cues.map((cue) => ({
+    lines: Array.isArray(cue?.lines) ? cue.lines.map((line) => normalizeCueText(line)).filter(Boolean) : []
+  }));
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      response_format: {
+        type: "json_object"
+      },
+      messages: [
+        {
+          role: "system",
+          content: [
+            "You are a subtitle translator.",
+            "Understand each group as a whole before translating.",
+            "Return only valid JSON with a groups array.",
+            "For each input group, return a translations array with exactly one translation per input line.",
+            "Preserve the English line order even if the target language would normally reorder clauses.",
+            "Each translation should correspond only to its matching English line, but may rely on surrounding lines for context.",
+            "Do not include numbering, labels, brackets, or explanations."
+          ].join(" ")
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            task: "Translate grouped subtitle lines",
+            source_language: sourceName,
+            target_language: languageName,
+            groups
+          })
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI grouped translation failed: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const content = payload?.choices?.[0]?.message?.content || "{}";
+  const parsed = JSON.parse(content);
+  const translatedGroups = Array.isArray(parsed?.groups) ? parsed.groups : [];
+
+  return cues.map((cue, index) => {
+    const lineCount = Array.isArray(cue?.lines) ? cue.lines.length : 0;
+    const candidateTranslations = Array.isArray(translatedGroups[index]?.translations)
+      ? translatedGroups[index].translations.map((value) => normalizeCueText(value))
+      : [];
+    const normalizedTranslations = Array.from({ length: lineCount }, (_value, lineIndex) =>
+      candidateTranslations[lineIndex] || ""
+    );
+
+    return {
+      ...cue,
+      translation: normalizeCueText(normalizedTranslations.join(" ").trim() || cue.translation || ""),
+      translations: normalizedTranslations
+    };
+  });
+}
+
 async function translateCues(cues, targetLanguage, sourceLanguage = "", provider = "google") {
   if (!targetLanguage || targetLanguage === sourceLanguage) {
     return cues;
@@ -2196,7 +2273,10 @@ async function handleTranslateCuesApi(request, response) {
       start: Number(cue?.start || 0),
       end: Number(cue?.end || 0),
       text: normalizeCueText(cue?.text || ""),
-      translation: normalizeCueText(cue?.translation || "")
+      translation: normalizeCueText(cue?.translation || ""),
+      lines: Array.isArray(cue?.lines)
+        ? cue.lines.map((line) => normalizeCueText(line)).filter(Boolean)
+        : []
     })).filter((cue) => cue.text);
 
     if (!normalizedCues.length) {
@@ -2204,7 +2284,13 @@ async function handleTranslateCuesApi(request, response) {
       return;
     }
 
-    const subtitles = await translateCues(normalizedCues, targetLanguage, sourceLanguage, provider);
+    const shouldUseGroupedOpenAI =
+      normalizedCues.some((cue) => Array.isArray(cue.lines) && cue.lines.length > 1)
+      && Boolean(process.env.OPENAI_API_KEY);
+
+    const subtitles = shouldUseGroupedOpenAI
+      ? await translateGroupedBatchWithOpenAI(normalizedCues, targetLanguage, sourceLanguage)
+      : await translateCues(normalizedCues, targetLanguage, sourceLanguage, provider);
     sendJson(response, 200, { subtitles });
   } catch (error) {
     sendJson(response, 500, {

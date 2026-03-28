@@ -2800,6 +2800,9 @@ function buildTranslationGroups(subtitles) {
       start: group.start,
       end: group.end,
       cueIndexes,
+      lines: cues
+        .map((cue) => (cue.text || "").trim())
+        .filter(Boolean),
       text: cues
         .map((cue) => (cue.text || "").trim())
         .join("\n")
@@ -3139,7 +3142,12 @@ function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartInd
     }
 
     const originalTexts = targetGroup.cueIndexes.map((cueIndex) => nextSubtitles[cueIndex]?.text || "");
-    const translations = splitGroupedTranslation(group?.translation || "", originalTexts);
+    const directTranslations = Array.isArray(group?.translations)
+      ? group.translations.map((value) => String(value || "").trim())
+      : [];
+    const translations = directTranslations.length === originalTexts.length && directTranslations.some(Boolean)
+      ? directTranslations
+      : splitGroupedTranslation(group?.translation || "", originalTexts);
     targetGroup.cueIndexes.forEach((cueIndex, cueOffset) => {
       const currentCue = nextSubtitles[cueIndex];
       if (!currentCue) {
@@ -3171,6 +3179,7 @@ async function translateSubtitlesProgressively(videoId, requestId, basePayload, 
     const groupChunk = translationGroups.slice(startIndex, startIndex + TRANSLATION_CHUNK_SIZE).map((group) => ({
       start: group.start,
       end: group.end,
+      lines: group.lines || [],
       text: group.text,
       translation: ""
     }));
