@@ -2984,7 +2984,41 @@ function splitGroupedTranslation(translation, originalTexts) {
       return null;
     }
 
-    return solution.groups.map((parts) => parts.join("").trim());
+    const rebalancedGroups = solution.groups.map((parts) => parts.slice());
+    const hasPredicateClause = (parts) =>
+      parts.some((part) => /大き|飛躍|思|考え|感じ|ようなもの|です|ます|だった|である/.test(normalizePart(part)));
+    const hasEspeciallyClause = (parts) =>
+      parts.some((part) => /特に|とりわけ|なかでも/.test(normalizePart(part)));
+
+    const firstEnglish = String(sourceTexts[0] || "").toLowerCase();
+    if (/\bthink\b|it'?s like|seems?|feel\b/.test(firstEnglish) && !hasPredicateClause(rebalancedGroups[0])) {
+      for (let index = 1; index < rebalancedGroups.length; index += 1) {
+        const clauseIndex = rebalancedGroups[index].findIndex((part) =>
+          /大き|飛躍|思|考え|感じ|ようなもの|です|ます|だった|である/.test(normalizePart(part))
+        );
+        if (clauseIndex >= 0) {
+          const [predicateClause] = rebalancedGroups[index].splice(clauseIndex, 1);
+          rebalancedGroups[0].push(predicateClause);
+          break;
+        }
+      }
+    }
+
+    const lastEnglish = String(sourceTexts[sourceTexts.length - 1] || "").toLowerCase();
+    if (/especially|particularly|in particular/.test(lastEnglish) && !hasEspeciallyClause(rebalancedGroups[expectedCount - 1])) {
+      for (let index = 0; index < rebalancedGroups.length - 1; index += 1) {
+        const clauseIndex = rebalancedGroups[index].findIndex((part) =>
+          /特に|とりわけ|なかでも/.test(normalizePart(part))
+        );
+        if (clauseIndex >= 0) {
+          const [especiallyClause] = rebalancedGroups[index].splice(clauseIndex, 1);
+          rebalancedGroups[expectedCount - 1].unshift(especiallyClause);
+          break;
+        }
+      }
+    }
+
+    return rebalancedGroups.map((parts) => parts.join("").trim());
   };
 
   const reorderClausesForEnglishOrder = (clauses) => {
