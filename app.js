@@ -2809,16 +2809,60 @@ function buildTranslationGroups(subtitles) {
   }).filter((group) => group.text);
 }
 
-function splitGroupedTranslation(translation, expectedCount) {
+function splitGroupedTranslation(translation, originalTexts) {
+  const sourceTexts = Array.isArray(originalTexts) ? originalTexts : [];
+  const expectedCount = sourceTexts.length;
+  if (!expectedCount) {
+    return [];
+  }
+
   const normalized = String(translation || "").replace(/\r/g, "").trim();
   if (!normalized) {
     return Array.from({ length: expectedCount }, () => "");
   }
 
+  const normalizePart = (part) => String(part || "").replace(/\s+/g, " ").trim();
+  const lineWeights = sourceTexts.map((text) => Math.max(1, normalizePart(text).length));
   const sentenceParts = normalized
     .split(/(?<=[。！？!?])\s+|\n+/)
-    .map((part) => part.replace(/\s+/g, " ").trim())
+    .map(normalizePart)
     .filter(Boolean);
+  const clauseParts = normalized
+    .split(/(?<=、)\s*|(?<=[。！？!?])\s*|\n+/)
+    .map(normalizePart)
+    .filter(Boolean);
+
+  const distributeSequentialParts = (parts) => {
+    if (!parts.length) {
+      return null;
+    }
+
+    return Array.from({ length: expectedCount }, (_value, index) => {
+      const start = Math.floor((index * parts.length) / expectedCount);
+      const end = Math.floor(((index + 1) * parts.length) / expectedCount);
+      const safeEnd = Math.max(start + 1, end);
+      return parts.slice(start, safeEnd).join("").trim();
+    });
+  };
+
+  const splitByWeights = (text) => {
+    const chars = Array.from(normalizePart(text));
+    if (!chars.length) {
+      return Array.from({ length: expectedCount }, () => "");
+    }
+
+    const totalWeight = lineWeights.reduce((sum, weight) => sum + weight, 0);
+    let consumedWeight = 0;
+    return lineWeights.map((weight, index) => {
+      const start = Math.round((consumedWeight / totalWeight) * chars.length);
+      consumedWeight += weight;
+      const end =
+        index === expectedCount - 1
+          ? chars.length
+          : Math.round((consumedWeight / totalWeight) * chars.length);
+      return chars.slice(start, end).join("").trim();
+    });
+  };
 
   const markerRegex = /(?:__LINE_(\d+)__|\[\[(\d+)\]\])\s*([\s\S]*?)(?=(?:\n?\s*(?:__LINE_\d+__|\[\[\d+\]\]))|$)/g;
   const markerMatches = Array.from(normalized.matchAll(markerRegex));
@@ -2827,7 +2871,7 @@ function splitGroupedTranslation(translation, expectedCount) {
     markerMatches.forEach((match) => {
       const index = Number(match[1] || match[2]) - 1;
       if (index >= 0 && index < expectedCount) {
-        parts[index] = String(match[3] || "").replace(/\s+/g, " ").trim();
+        parts[index] = normalizePart(match[3]);
       }
     });
     const fallback = normalized.replace(/\s+/g, " ").trim();
@@ -2846,7 +2890,7 @@ function splitGroupedTranslation(translation, expectedCount) {
 
   const lineParts = normalized
     .split("\n")
-    .map((line) => line.replace(/\s+/g, " ").trim())
+    .map(normalizePart)
     .filter(Boolean);
   if (lineParts.length === expectedCount) {
     return lineParts;
@@ -2855,32 +2899,23 @@ function splitGroupedTranslation(translation, expectedCount) {
     return sentenceParts;
   }
 
-  const distributeParts = (parts) => {
-    if (!parts.length) {
-      return null;
-    }
+  if (clauseParts.length === expectedCount) {
+    return clauseParts;
+  }
 
-    return Array.from({ length: expectedCount }, (_value, index) => {
-      const start = Math.floor((index * parts.length) / expectedCount);
-      const end = Math.floor(((index + 1) * parts.length) / expectedCount);
-      const slice = parts.slice(start, Math.max(start + 1, end));
-      return slice.join(" ").trim();
-    });
-  };
+  if (clauseParts.length > 1) {
+    return distributeSequentialParts(clauseParts);
+  }
 
   if (sentenceParts.length > 1) {
-    return distributeParts(sentenceParts);
+    return distributeSequentialParts(sentenceParts);
   }
 
   if (lineParts.length > 1) {
-    return distributeParts(lineParts);
+    return distributeSequentialParts(lineParts);
   }
 
-  const fallback = normalized.replace(/\s+/g, " ").trim();
-  return [
-    fallback,
-    ...Array.from({ length: Math.max(0, expectedCount - 1) }, () => "")
-  ];
+  return splitByWeights(normalized);
 }
 
 function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartIndex, translationGroups) {
@@ -2891,7 +2926,8 @@ function mergeTranslatedGroups(currentSubtitles, translatedGroups, groupStartInd
       return;
     }
 
-    const translations = splitGroupedTranslation(group?.translation || "", targetGroup.cueIndexes.length);
+    const originalTexts = targetGroup.cueIndexes.map((cueIndex) => nextSubtitles[cueIndex]?.text || "");
+    const translations = splitGroupedTranslation(group?.translation || "", originalTexts);
     targetGroup.cueIndexes.forEach((cueIndex, cueOffset) => {
       const currentCue = nextSubtitles[cueIndex];
       if (!currentCue) {
