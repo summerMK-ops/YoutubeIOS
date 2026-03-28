@@ -1059,6 +1059,12 @@ select {
   margin-bottom: 8px;
 }
 
+.heargap-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .heargap-sheet-body {
   display: grid;
   flex: 1 1 auto;
@@ -1088,6 +1094,36 @@ select {
   font-size: 1.18rem;
   font-weight: 700;
   line-height: 1.35;
+}
+
+.heargap-original .heargap-word {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.heargap-original .heargap-link {
+  display: inline-block;
+  margin: 0 0.08em;
+  color: #53e2a7;
+  font-weight: 800;
+}
+
+.heargap-original .heargap-weak {
+  font-size: 0.84em;
+  opacity: 0.9;
+}
+
+.heargap-original .heargap-stress {
+  font-weight: 850;
+}
+
+.heargap-original .heargap-flap {
+  color: #75c8ff;
+}
+
+.heargap-original .heargap-omit {
+  color: #8f97a8;
+  opacity: 0.86;
 }
 
 .heargap-heard-as {
@@ -1954,6 +1990,10 @@ select {
     min-width: 0;
     padding: 11px 8px;
     font-size: 0.92rem;
+  }
+
+  .heargap-header-actions {
+    gap: 6px;
   }
 
   .dictionary-meaning-line {

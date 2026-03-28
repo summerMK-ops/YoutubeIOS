@@ -62,6 +62,7 @@ const state = {
   initialBootstrapStarted: false,
   heargapOpen: false,
   heargapCueIndex: -1,
+  heargapVisualEnabled: true,
   heargapLoopMode: "off",
   heargapIteration: 0,
   heargapPlaying: false,
@@ -215,6 +216,7 @@ const elements = {
   closeHearGapSheet: document.getElementById("close-heargap-sheet"),
   heargapBackdrop: document.getElementById("heargap-backdrop"),
   heargapSheet: document.getElementById("heargap-sheet"),
+  heargapVisualToggle: document.getElementById("heargap-visual-toggle"),
   heargapOriginal: document.getElementById("heargap-original"),
   heargapHeardAs: document.getElementById("heargap-heard-as"),
   heargapKana: document.getElementById("heargap-kana"),
@@ -244,6 +246,8 @@ const elements = {
 };
 
 const HEARGAP_TAG_OPTIONS = ["連結", "脱落", "弱形", "flap T", "省略", "強勢"];
+const HEARGAP_WEAK_WORDS = new Set(["a", "an", "and", "are", "as", "at", "for", "from", "of", "or", "the", "to", "was", "were", "you"]);
+const HEARGAP_LINK_PAIRS = new Set(["kind of", "right now", "sort of", "what are", "going to", "want to"]);
 const HEARGAP_KANA_MAP = {
   oh: "オウ",
   yeah: "イェー",
@@ -430,6 +434,7 @@ function buildHearGapData(cue) {
 
   return {
     original: text || "No subtitles yet.",
+    visualHtml: buildHearGapVisual(text),
     heardAs: heardTokens.join(" ").trim(),
     kana: kanaTokens.join(" ").trim(),
     ipa: ipaTokens.join(" ").trim(),
@@ -439,6 +444,65 @@ function buildHearGapData(cue) {
     start: Number(cue?.start || 0),
     end: Number(cue?.end || 0)
   };
+}
+
+function buildHearGapVisual(text) {
+  const source = String(text || "").trim();
+  if (!source) {
+    return escapeHtml("No subtitles yet.");
+  }
+
+  const matches = [...source.matchAll(/[A-Za-z']+[.,!?;:]*/g)];
+  if (!matches.length) {
+    return escapeHtml(source);
+  }
+
+  const tokens = matches.map((match) => {
+    const raw = match[0];
+    const word = (raw.match(/[A-Za-z']+/) || [""])[0];
+    const trailing = raw.slice(word.length);
+    return {
+      raw,
+      word,
+      trailing,
+      normalized: normalizeHearGapWord(word)
+    };
+  });
+
+  const parts = [];
+  for (let index = 0; index < tokens.length; index += 1) {
+    const current = tokens[index];
+    const next = tokens[index + 1];
+    const classes = ["heargap-word"];
+
+    if (HEARGAP_WEAK_WORDS.has(current.normalized)) {
+      classes.push("heargap-weak");
+    } else {
+      classes.push("heargap-stress");
+    }
+
+    let content = escapeHtml(current.word);
+    const hasFinalTD = /[td]$/i.test(current.word);
+    if (hasFinalTD) {
+      const stem = escapeHtml(current.word.slice(0, -1));
+      const finalChar = escapeHtml(current.word.slice(-1));
+      if (!next || !/^[aeiou]/i.test(next.normalized)) {
+        content = `${stem}<span class="heargap-omit">(${finalChar})</span>`;
+      } else {
+        content = `${stem}<span class="heargap-flap">${finalChar}</span>`;
+      }
+    }
+
+    parts.push(`<span class="${classes.join(" ")}">${content}${escapeHtml(current.trailing)}</span>`);
+    if (!next) {
+      continue;
+    }
+
+    const pair = `${current.normalized} ${next.normalized}`;
+    parts.push(HEARGAP_LINK_PAIRS.has(pair) ? '<span class="heargap-link">~</span>' : " ");
+  }
+
+  return parts.join("");
 }
 
 function getHearGapCue() {
@@ -517,6 +581,11 @@ function updateHearGapControls() {
     elements.heargapLoop.setAttribute("aria-pressed", String(state.heargapLoopMode !== "off"));
   }
 
+  if (elements.heargapVisualToggle) {
+    elements.heargapVisualToggle.textContent = state.heargapVisualEnabled ? "音変化 ON" : "音変化 OFF";
+    elements.heargapVisualToggle.setAttribute("aria-pressed", String(state.heargapVisualEnabled));
+  }
+
   const hasPrev = state.heargapCueIndex > 0;
   const hasNext = state.heargapCueIndex >= 0 && state.heargapCueIndex < state.subtitles.length - 1;
   if (elements.heargapPrev) {
@@ -531,7 +600,11 @@ function renderHearGapSheet() {
   const cue = getHearGapCue();
   const data = buildHearGapData(cue);
 
-  elements.heargapOriginal.textContent = data.original;
+  if (state.heargapVisualEnabled) {
+    elements.heargapOriginal.innerHTML = data.visualHtml;
+  } else {
+    elements.heargapOriginal.textContent = data.original;
+  }
   elements.heargapHeardAs.textContent = data.heardAs && data.heardAs.toLowerCase() !== data.original.toLowerCase() ? data.heardAs : "";
   elements.heargapKana.textContent = data.kana || "";
   elements.heargapIpa.textContent = data.ipa || "";
@@ -2020,6 +2093,15 @@ elements.heargapBackdrop?.addEventListener("click", () => {
 
 elements.heargapPlay?.addEventListener("click", () => {
   playHearGapCue();
+});
+
+elements.heargapVisualToggle?.addEventListener("click", () => {
+  state.heargapVisualEnabled = !state.heargapVisualEnabled;
+  if (state.heargapOpen) {
+    renderHearGapSheet();
+  } else {
+    updateHearGapControls();
+  }
 });
 
 elements.heargapPrev?.addEventListener("click", () => {
