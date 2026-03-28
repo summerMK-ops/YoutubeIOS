@@ -178,6 +178,8 @@ function textFromRuns(value) {
 
 function normalizeCueText(text) {
   return decodeHtmlEntities(text)
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/?[^>]+>/g, "")
     .replace(/\s+/g, " ")
     .replace(/[\u200b-\u200d\ufeff]/g, "")
     .trim();
