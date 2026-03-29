@@ -1533,6 +1533,14 @@ function applyTranscriptVisibility(visible) {
     elements.transcriptVisibilityToggle.setAttribute("aria-label", state.transcriptVisible ? "Hide transcript text" : "Show transcript text");
     elements.transcriptVisibilityToggle.classList.toggle("is-active", !state.transcriptVisible);
   }
+
+  if (elements.transcriptList && !state.transcriptVisible) {
+    elements.transcriptList.scrollTop = 0;
+  }
+
+  if (state.transcriptVisible && state.activeIndex >= 0) {
+    updateActiveCue(state.activeIndex, true);
+  }
 }
 
 function updateRepeatButtons() {

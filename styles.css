@@ -705,6 +705,11 @@ body.transcript-hidden .cue.active {
   background: rgba(255, 255, 255, 0.05);
 }
 
+body.transcript-hidden .transcript-list {
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .transcript-panel .transcript-head {
   display: none;
 }
