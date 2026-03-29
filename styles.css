@@ -30,7 +30,8 @@ body {
   background: var(--bg-accent);
   overflow-x: hidden;
   overflow-y: auto;
-  -webkit-text-size-adjust: 100%;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
   padding:
     env(safe-area-inset-top, 0)
     env(safe-area-inset-right, 0)
@@ -70,6 +71,7 @@ button {
   padding: 14px 18px;
   cursor: pointer;
   transition: transform 180ms ease, background 180ms ease;
+  touch-action: manipulation;
 }
 
 button:hover {
@@ -1449,6 +1451,8 @@ select {
 .cue-translation {
   margin: 10px 0 0;
   line-height: 1.7;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
 .cue-original {
