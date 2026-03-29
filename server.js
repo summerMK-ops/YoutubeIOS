@@ -515,45 +515,74 @@ async function translateTextWithDeepL(text, targetLanguage, sourceLanguage = "")
   return normalizeCueText(payload?.translations?.[0]?.text || "");
 }
 
-async function translateGroupedCuesWithGoogle(cues, targetLanguage, sourceLanguage = "") {
-  const translated = [];
-  for (const cue of cues) {
-    const lines = Array.isArray(cue?.lines) ? cue.lines.map((line) => normalizeCueText(line)).filter(Boolean) : [];
-    if (!lines.length) {
-      translated.push({
-        ...cue,
-        translations: [],
-        translation: cue.translation || ""
-      });
-      continue;
-    }
-
-    const tagMap = buildStableTagMap(lines.length);
-    const taggedSource = lines
-      .map((line, index) => `⟪${index + 1}⟫${line}⟪/${index + 1}⟫`)
-      .join("\n");
-    const tokenizedSource = replaceStableTags(taggedSource, tagMap, "toToken");
-    const rawTranslation = await translateTextWithGoogle(tokenizedSource, targetLanguage, sourceLanguage);
-    const restoredTranslation = replaceStableTags(rawTranslation, tagMap, "toTag");
-    const extractedTranslations = extractDelimitedTranslations(restoredTranslation, lines.length);
-
-    let normalizedTranslations = extractedTranslations;
-    if (!normalizedTranslations.length || !normalizedTranslations.some(Boolean)) {
-      normalizedTranslations = [];
-      for (const line of lines) {
-        const singleLineTranslation = await translateTextWithGoogle(line, targetLanguage, sourceLanguage);
-        normalizedTranslations.push(normalizeCueText(singleLineTranslation));
-      }
-    }
-
-    translated.push({
+async function translateSingleGroupedCueWithGoogle(cue, targetLanguage, sourceLanguage = "") {
+  const lines = Array.isArray(cue?.lines) ? cue.lines.map((line) => normalizeCueText(line)).filter(Boolean) : [];
+  if (!lines.length) {
+    return {
       ...cue,
-      translations: normalizedTranslations,
-      translation: normalizeTranslatedText(normalizedTranslations.join(" "))
-    });
+      translations: [],
+      translation: cue.translation || ""
+    };
   }
 
-  return translated;
+  const tagMap = buildStableTagMap(lines.length);
+  const taggedSource = lines
+    .map((line, index) => `⟪${index + 1}⟫${line}⟪/${index + 1}⟫`)
+    .join("\n");
+  const tokenizedSource = replaceStableTags(taggedSource, tagMap, "toToken");
+  const rawTranslation = await withTimeout(
+    translateTextWithGoogle(tokenizedSource, targetLanguage, sourceLanguage),
+    12000,
+    "Google grouped translation timed out."
+  );
+  const restoredTranslation = replaceStableTags(rawTranslation, tagMap, "toTag");
+  const extractedTranslations = extractDelimitedTranslations(restoredTranslation, lines.length);
+
+  let normalizedTranslations = extractedTranslations;
+  if (!normalizedTranslations.length || normalizedTranslations.filter(Boolean).length !== lines.length) {
+    normalizedTranslations = await Promise.all(
+      lines.map(async (line) => {
+        const singleLineTranslation = await withTimeout(
+          translateTextWithGoogle(line, targetLanguage, sourceLanguage),
+          8000,
+          "Google line translation timed out."
+        ).catch(() => "");
+        return normalizeCueText(singleLineTranslation);
+      })
+    );
+  }
+
+  return {
+    ...cue,
+    translations: normalizedTranslations,
+    translation: normalizeTranslatedText(normalizedTranslations.join(" "))
+  };
+}
+
+async function translateGroupedCuesWithGoogle(cues, targetLanguage, sourceLanguage = "") {
+  const concurrency = 4;
+  const results = Array.from({ length: cues.length });
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < cues.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      const cue = cues[currentIndex];
+      try {
+        results[currentIndex] = await translateSingleGroupedCueWithGoogle(cue, targetLanguage, sourceLanguage);
+      } catch (_error) {
+        results[currentIndex] = {
+          ...cue,
+          translations: [],
+          translation: cue.translation || ""
+        };
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(cues.length, 1)) }, () => worker()));
+  return results;
 }
 
 async function translateBatchWithOpenAI(cues, targetLanguage, sourceLanguage = "") {
