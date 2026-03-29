@@ -546,17 +546,6 @@ select {
   border-color: rgba(174, 191, 217, 0.24);
 }
 
-.compact-pip-button {
-  min-width: 60px;
-  color: #d9ecf2;
-  border-color: rgba(174, 191, 217, 0.24);
-}
-
-.compact-pip-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .compact-transcript-visibility-button.is-active {
   color: #ffd348;
   border-color: rgba(255, 211, 72, 0.32);

@@ -215,7 +215,6 @@ const elements = {
   dictionaryPhonetic: document.getElementById("dictionary-phonetic"),
   dictionaryBody: document.getElementById("dictionary-body"),
     saveWord: document.getElementById("save-word"),
-    pipToggle: document.getElementById("pip-toggle"),
     openHearGapSheet: document.getElementById("open-heargap-sheet"),
   closeHearGapSheet: document.getElementById("close-heargap-sheet"),
   heargapBackdrop: document.getElementById("heargap-backdrop"),
@@ -1542,31 +1541,6 @@ function applyTranscriptVisibility(visible) {
   if (state.transcriptVisible && state.activeIndex >= 0) {
     updateActiveCue(state.activeIndex, true);
   }
-}
-
-function getPlayerVideoElement() {
-  const playerHost = document.getElementById("player");
-  if (!playerHost) {
-    return null;
-  }
-
-  return playerHost.querySelector("video");
-}
-
-function canUsePictureInPicture(video) {
-  if (!video) {
-    return false;
-  }
-
-  if (typeof video.webkitSupportsPresentationMode === "function" && typeof video.webkitSetPresentationMode === "function") {
-    try {
-      return video.webkitSupportsPresentationMode("picture-in-picture");
-    } catch (_error) {
-      return false;
-    }
-  }
-
-  return Boolean(document.pictureInPictureEnabled && typeof video.requestPictureInPicture === "function");
 }
 
 function updatePipButton() {
@@ -4064,6 +4038,14 @@ function updatePlaybackButton() {
   if (elements.togglePlayback) {
     elements.togglePlayback.innerHTML = `<span class="transport-play-icon" aria-hidden="true">${isPlaying ? "||" : "&#9654;"}</span>`;
   }
+}
+
+function updatePipButton() {
+  return;
+}
+
+async function togglePictureInPicture() {
+  return;
 }
 
 function updateActiveCue(index, forceScroll = false) {
