@@ -3326,6 +3326,10 @@ async function handleVideoSelection(item, options = {}) {
   clearRepeatMode(true);
   setRepeatStatus("リピートはオフです。");
 
+  const transcriptPromise = state.autoFetch
+    ? loadAutoTranscript(videoId, 0)
+    : Promise.resolve();
+
   if (state.playerReady && state.player?.loadVideoById) {
     state.player.loadVideoById({
       videoId,
@@ -3346,7 +3350,10 @@ async function handleVideoSelection(item, options = {}) {
     renderVideoList(elements.recommendations, state.recommendations, handleVideoSelection);
   }
 
-  loadRecommendations(videoId);
+  loadRecommendations(videoId).catch((error) => {
+    elements.recommendationStatus.textContent = error.message || "おすすめ動画の取得に失敗しました。";
+    renderEmptyState(elements.recommendations, "おすすめ動画を読み込めませんでした。");
+  });
   if (state.activePopover === "channel-videos") {
     loadChannelVideos(state.channelVideosSort, {
       videoId,
@@ -3357,7 +3364,7 @@ async function handleVideoSelection(item, options = {}) {
 
   if (state.autoFetch) {
     try {
-      await loadAutoTranscript(videoId, 0);
+      await transcriptPromise;
     } catch (error) {
       setTrackOptions([]);
       renderEmptyState(elements.transcriptList, "字幕を自動取得できませんでした。手動字幕ファイルも使えます。");
