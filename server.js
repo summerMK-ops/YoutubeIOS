@@ -457,13 +457,14 @@ function extractDelimitedTranslations(text, expectedCount) {
 
 function buildStableTagMap(lineCount) {
   const entries = [];
+  const tokenSeed = Math.random().toString(36).slice(2, 10).toUpperCase();
   for (let index = 0; index < lineCount; index += 1) {
     const lineNumber = index + 1;
     entries.push({
       startTag: `⟪${lineNumber}⟫`,
       endTag: `⟪/${lineNumber}⟫`,
-      startToken: `__TAG${lineNumber}_START__`,
-      endToken: `__TAG${lineNumber}_END__`
+      startToken: `__HGX${tokenSeed}${lineNumber}A__`,
+      endToken: `__HGX${tokenSeed}${lineNumber}B__`
     });
   }
   return entries;
@@ -483,6 +484,23 @@ function replaceStableTags(text, tagMap, direction = "toToken") {
     }
   }
   return nextText;
+}
+
+function extractStableTokenTranslations(text, tagMap, expectedCount) {
+  const normalized = String(text || "").replace(/\r/g, "");
+  const parts = Array.from({ length: expectedCount }, () => "");
+
+  const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  tagMap.forEach((entry, index) => {
+    const pattern = new RegExp(`${escapeRegex(entry.startToken)}([\\s\\S]*?)${escapeRegex(entry.endToken)}`);
+    const match = normalized.match(pattern);
+    if (match) {
+      parts[index] = normalizeCueText(match[1] || "");
+    }
+  });
+
+  return parts;
 }
 
 async function translateTextWithDeepL(text, targetLanguage, sourceLanguage = "") {
@@ -535,10 +553,13 @@ async function translateSingleGroupedCueWithGoogle(cue, targetLanguage, sourceLa
     12000,
     "Google grouped translation timed out."
   );
+  const tokenExtractedTranslations = extractStableTokenTranslations(rawTranslation, tagMap, lines.length);
   const restoredTranslation = replaceStableTags(rawTranslation, tagMap, "toTag");
   const extractedTranslations = extractDelimitedTranslations(restoredTranslation, lines.length);
 
-  let normalizedTranslations = extractedTranslations;
+  let normalizedTranslations = tokenExtractedTranslations.filter(Boolean).length === lines.length
+    ? tokenExtractedTranslations
+    : extractedTranslations;
   if (!normalizedTranslations.length || normalizedTranslations.filter(Boolean).length !== lines.length) {
     normalizedTranslations = await Promise.all(
       lines.map(async (line) => {
