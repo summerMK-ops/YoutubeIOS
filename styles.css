@@ -692,9 +692,17 @@ select {
 
 body.transcript-hidden .current-line,
 body.transcript-hidden .current-translation,
+body.transcript-hidden .current-subtitle-actions,
+body.transcript-hidden .cue-time,
+body.transcript-hidden .cue-action-group,
 body.transcript-hidden .cue-original,
 body.transcript-hidden .cue-translation {
   visibility: hidden;
+}
+
+body.transcript-hidden .cue.active {
+  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .transcript-panel .transcript-head {
