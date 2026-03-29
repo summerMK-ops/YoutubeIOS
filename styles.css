@@ -690,13 +690,11 @@ select {
   overflow: hidden;
 }
 
-body.transcript-hidden .transcript-panel,
-body.transcript-hidden .current-subtitle-box {
-  display: none;
-}
-
-body.transcript-hidden .workspace {
-  grid-template-columns: minmax(0, 1fr);
+body.transcript-hidden .current-line,
+body.transcript-hidden .current-translation,
+body.transcript-hidden .cue-original,
+body.transcript-hidden .cue-translation {
+  visibility: hidden;
 }
 
 .transcript-panel .transcript-head {
