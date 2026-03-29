@@ -214,8 +214,9 @@ const elements = {
   dictionaryWord: document.getElementById("dictionary-word"),
   dictionaryPhonetic: document.getElementById("dictionary-phonetic"),
   dictionaryBody: document.getElementById("dictionary-body"),
-  saveWord: document.getElementById("save-word"),
-  openHearGapSheet: document.getElementById("open-heargap-sheet"),
+    saveWord: document.getElementById("save-word"),
+    pipToggle: document.getElementById("pip-toggle"),
+    openHearGapSheet: document.getElementById("open-heargap-sheet"),
   closeHearGapSheet: document.getElementById("close-heargap-sheet"),
   heargapBackdrop: document.getElementById("heargap-backdrop"),
   heargapSheet: document.getElementById("heargap-sheet"),
@@ -1543,6 +1544,74 @@ function applyTranscriptVisibility(visible) {
   }
 }
 
+function getPlayerVideoElement() {
+  const playerHost = document.getElementById("player");
+  if (!playerHost) {
+    return null;
+  }
+
+  return playerHost.querySelector("video");
+}
+
+function canUsePictureInPicture(video) {
+  if (!video) {
+    return false;
+  }
+
+  if (typeof video.webkitSupportsPresentationMode === "function" && typeof video.webkitSetPresentationMode === "function") {
+    try {
+      return video.webkitSupportsPresentationMode("picture-in-picture");
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  return Boolean(document.pictureInPictureEnabled && typeof video.requestPictureInPicture === "function");
+}
+
+function updatePipButton() {
+  if (!elements.pipToggle) {
+    return;
+  }
+
+  const video = getPlayerVideoElement();
+  const supported = canUsePictureInPicture(video);
+  let active = false;
+
+  if (video && typeof video.webkitPresentationMode === "string") {
+    active = video.webkitPresentationMode === "picture-in-picture";
+  } else if (document.pictureInPictureElement) {
+    active = document.pictureInPictureElement === video;
+  }
+
+  elements.pipToggle.disabled = !supported;
+  elements.pipToggle.textContent = active ? "PiP中" : "PiP";
+  elements.pipToggle.setAttribute("aria-pressed", active ? "true" : "false");
+}
+
+async function togglePictureInPicture() {
+  const video = getPlayerVideoElement();
+  if (!video || !canUsePictureInPicture(video)) {
+    updatePipButton();
+    return;
+  }
+
+  try {
+    if (typeof video.webkitSupportsPresentationMode === "function" && typeof video.webkitSetPresentationMode === "function") {
+      const nextMode = video.webkitPresentationMode === "picture-in-picture" ? "inline" : "picture-in-picture";
+      video.webkitSetPresentationMode(nextMode);
+    } else if (document.pictureInPictureElement === video && typeof document.exitPictureInPicture === "function") {
+      await document.exitPictureInPicture();
+    } else if (typeof video.requestPictureInPicture === "function") {
+      await video.requestPictureInPicture();
+    }
+  } catch (_error) {
+    // Keep this experimental and silent when browsers refuse PiP.
+  }
+
+  window.setTimeout(updatePipButton, 100);
+}
+
 function updateRepeatButtons() {
   const cueActive = state.repeatMode?.type === "cue" && state.repeatMode.index === state.activeIndex;
   const groupActive = state.repeatMode?.type === "pair"
@@ -2391,19 +2460,20 @@ function createPlayer(videoId) {
       origin
     },
     events: {
-      onReady: () => {
-        state.playerReady = true;
-        applyPlaybackRate();
-        if (state.pendingResumeTime > 0) {
-          seekTo(state.pendingResumeTime, false);
+        onReady: () => {
+          state.playerReady = true;
+          applyPlaybackRate();
+          if (state.pendingResumeTime > 0) {
+            seekTo(state.pendingResumeTime, false);
           state.pendingResumeTime = 0;
         }
-        startSyncLoop();
-        syncActiveCue(true);
-        updatePlaybackButton();
-        updateTransportUI();
-      },
-      onStateChange: () => {
+          startSyncLoop();
+          syncActiveCue(true);
+          updatePlaybackButton();
+          updateTransportUI();
+          window.setTimeout(updatePipButton, 600);
+        },
+        onStateChange: () => {
         if (state.pendingResumeTime > 0 && state.player?.getPlayerState?.() === window.YT?.PlayerState?.CUED) {
           seekTo(state.pendingResumeTime, false);
           state.pendingResumeTime = 0;
@@ -2415,14 +2485,15 @@ function createPlayer(videoId) {
         }
         if (!state.heargapPlaying) {
           syncActiveCue();
+          }
+          updatePlaybackButton();
+          updateTransportUI();
+          persistCurrentPlaybackTime();
+          window.setTimeout(updatePipButton, 120);
         }
-        updatePlaybackButton();
-        updateTransportUI();
-        persistCurrentPlaybackTime();
       }
-    }
-  });
-}
+    });
+  }
 
 function applyPlaybackRate() {
   if (!elements.playbackRate) {
@@ -3715,6 +3786,10 @@ elements.highlightTranslation.addEventListener("change", (event) => {
 
 elements.playbackRate?.addEventListener("change", () => {
   applyPlaybackRate();
+});
+
+elements.pipToggle?.addEventListener("click", () => {
+  togglePictureInPicture();
 });
 
 elements.transcriptVisibilityToggle?.addEventListener("click", () => {
