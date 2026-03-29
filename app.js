@@ -39,6 +39,7 @@ const state = {
   translationProvider: "google",
   translationPending: false,
   fontSizeMode: "small",
+  transcriptVisible: true,
   activePopover: null,
   pendingResumeTime: 0,
   lastSavedSecond: -1,
@@ -237,6 +238,7 @@ const elements = {
   aiSearchCurrent: document.getElementById("ai-search-current"),
   toggleFavorite: document.getElementById("toggle-favorite"),
   playbackRate: document.getElementById("playback-rate"),
+  transcriptVisibilityToggle: document.getElementById("transcript-visibility-toggle"),
   seekBack10: document.getElementById("seek-back-10"),
   seekBack5: document.getElementById("seek-back-5"),
   togglePlayback: document.getElementById("toggle-playback"),
@@ -1519,6 +1521,17 @@ function applyFontSizeMode(mode) {
   document.body.classList.add(`font-${normalizedMode}`);
   if (elements.fontSizeMode) {
     elements.fontSizeMode.value = normalizedMode;
+  }
+}
+
+function applyTranscriptVisibility(visible) {
+  state.transcriptVisible = visible !== false;
+  document.body.classList.toggle("transcript-hidden", !state.transcriptVisible);
+  if (elements.transcriptVisibilityToggle) {
+    elements.transcriptVisibilityToggle.textContent = state.transcriptVisible ? "文字ON" : "文字OFF";
+    elements.transcriptVisibilityToggle.setAttribute("aria-pressed", state.transcriptVisible ? "false" : "true");
+    elements.transcriptVisibilityToggle.setAttribute("aria-label", state.transcriptVisible ? "Hide transcript text" : "Show transcript text");
+    elements.transcriptVisibilityToggle.classList.toggle("is-active", !state.transcriptVisible);
   }
 }
 
@@ -3696,6 +3709,10 @@ elements.playbackRate?.addEventListener("change", () => {
   applyPlaybackRate();
 });
 
+elements.transcriptVisibilityToggle?.addEventListener("click", () => {
+  applyTranscriptVisibility(!state.transcriptVisible);
+});
+
 elements.jumpCurrent.addEventListener("click", () => {
   if (state.activeIndex >= 0) {
     updateActiveCue(state.activeIndex, true);
@@ -4153,6 +4170,7 @@ updateNowPlaying();
 setTrackOptions([]);
 setRepeatStatus("リピートはオフです。");
 applyFontSizeMode(state.fontSizeMode);
+applyTranscriptVisibility(state.transcriptVisible);
 elements.currentCueTime.textContent = "00:00 - 00:00";
 updateTransportUI();
 syncViewportHeight();

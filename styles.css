@@ -540,6 +540,18 @@ select {
   font-size: 0.72rem;
 }
 
+.compact-transcript-visibility-button {
+  min-width: 74px;
+  color: #cfe6ff;
+  border-color: rgba(174, 191, 217, 0.24);
+}
+
+.compact-transcript-visibility-button.is-active {
+  color: #ffd348;
+  border-color: rgba(255, 211, 72, 0.32);
+  background: rgba(255, 211, 72, 0.08);
+}
+
 .compact-load-field {
   margin-top: 0;
 }
@@ -676,6 +688,15 @@ select {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+}
+
+body.transcript-hidden .transcript-panel,
+body.transcript-hidden .current-subtitle-box {
+  display: none;
+}
+
+body.transcript-hidden .workspace {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .transcript-panel .transcript-head {
