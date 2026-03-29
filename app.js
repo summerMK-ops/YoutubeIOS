@@ -1882,6 +1882,10 @@ function updateSubtitleTranslations(subtitles, statusMessage) {
   syncActiveCue(true);
 }
 
+function countTranslatedSubtitles(subtitles) {
+  return (Array.isArray(subtitles) ? subtitles : []).filter((cue) => String(cue?.translation || "").trim()).length;
+}
+
 function renderTranscript() {
   if (!state.subtitles.length) {
     renderEmptyState(elements.transcriptList, "字幕を読み込むと、ここにタイムスタンプ一覧が表示されます。");
@@ -3277,13 +3281,45 @@ async function loadAutoTranscript(videoId, trackIndex = 0) {
       language: requestedLanguage,
       provider: requestedProvider
     });
+
+    if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
+      return;
+    }
+
+    if (!countTranslatedSubtitles(state.subtitles) && requestedLanguage !== "en") {
+      const fallbackPayload = await fetchTrackTranscript(videoId, trackIndex, {
+        language: requestedLanguage,
+        provider: requestedProvider
+      });
+      if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
+        return;
+      }
+
+      const mergedSubtitles = mergeSubtitleTranslations(state.subtitles, fallbackPayload.subtitles || []);
+      state.translationPending = false;
+      updateSubtitleTranslations(mergedSubtitles, buildTranscriptStatus({ ...payload, subtitles: mergedSubtitles }, requestedLanguage));
+    }
   } catch (_error) {
     if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
       return;
     }
 
-    state.translationPending = false;
-    setSubtitleStatus(buildTranscriptStatus(payload, requestedLanguage, { translationFailed: true }));
+    try {
+      const fallbackPayload = await fetchTrackTranscript(videoId, trackIndex, {
+        language: requestedLanguage,
+        provider: requestedProvider
+      });
+      if (requestId !== state.transcriptRequestId || videoId !== state.currentVideoId) {
+        return;
+      }
+
+      const mergedSubtitles = mergeSubtitleTranslations(state.subtitles, fallbackPayload.subtitles || []);
+      state.translationPending = false;
+      updateSubtitleTranslations(mergedSubtitles, buildTranscriptStatus({ ...payload, subtitles: mergedSubtitles }, requestedLanguage));
+    } catch (_fallbackError) {
+      state.translationPending = false;
+      setSubtitleStatus(buildTranscriptStatus(payload, requestedLanguage, { translationFailed: true }));
+    }
   }
 }
 
