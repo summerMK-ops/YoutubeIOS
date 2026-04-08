@@ -2267,9 +2267,29 @@ function updateActiveCue(index, forceScroll = false) {
   updateRepeatButtons();
 
   if (state.autoScroll || forceScroll) {
+    const isTabletLayout = document.body.classList.contains("device-tablet");
+    const listRect = elements.transcriptList.getBoundingClientRect();
+    const activeRect = activeNode.getBoundingClientRect();
+
+    if (isTabletLayout && !forceScroll) {
+      const upperDeadZone = listRect.top + (listRect.height * 0.18);
+      const lowerDeadZone = listRect.bottom - (listRect.height * 0.28);
+      const staysInComfortZone = activeRect.top >= upperDeadZone && activeRect.bottom <= lowerDeadZone;
+
+      if (staysInComfortZone) {
+        return;
+      }
+
+      const targetTop = Math.max(
+        elements.transcriptList.scrollTop + (activeRect.top - listRect.top) - (listRect.height * 0.34),
+        0
+      );
+      elements.transcriptList.scrollTo({ top: targetTop, behavior: "auto" });
+      return;
+    }
+
     const anchorIndex = Math.max(index - 1, 0);
     const anchorNode = elements.transcriptList.querySelector(`[data-index="${anchorIndex}"]`) || activeNode;
-    const listRect = elements.transcriptList.getBoundingClientRect();
     const anchorRect = anchorNode.getBoundingClientRect();
     const top = Math.max(elements.transcriptList.scrollTop + (anchorRect.top - listRect.top) - 8, 0);
     elements.transcriptList.scrollTo({ top, behavior: "smooth" });
