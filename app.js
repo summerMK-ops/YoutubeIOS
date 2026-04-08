@@ -83,6 +83,28 @@ function syncViewportHeight() {
   document.documentElement.style.setProperty("--app-height", `${viewportHeight}px`);
 }
 
+function detectDeviceLayout() {
+  const width = window.visualViewport?.width || window.innerWidth || 0;
+  const touchPoints = navigator.maxTouchPoints || 0;
+  const isTouchDevice = touchPoints > 0 || /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+
+  if (isTouchDevice && width <= 860) {
+    return width >= 768 ? "tablet" : "phone";
+  }
+
+  if (isTouchDevice && width <= 1280) {
+    return "tablet";
+  }
+
+  return "desktop";
+}
+
+function applyDeviceLayout() {
+  const deviceLayout = detectDeviceLayout();
+  document.body.classList.remove("device-phone", "device-tablet", "device-desktop");
+  document.body.classList.add(`device-${deviceLayout}`);
+}
+
 function loadYouTubeIframeApi() {
   if (window.YT?.Player) {
     return Promise.resolve();
@@ -4239,9 +4261,12 @@ applyTranscriptVisibility(state.transcriptVisible);
 elements.currentCueTime.textContent = "00:00 - 00:00";
 updateTransportUI();
 syncViewportHeight();
+applyDeviceLayout();
 window.addEventListener("resize", syncViewportHeight);
+window.addEventListener("resize", applyDeviceLayout);
 window.visualViewport?.addEventListener("resize", syncViewportHeight);
 window.visualViewport?.addEventListener("scroll", syncViewportHeight);
+window.visualViewport?.addEventListener("resize", applyDeviceLayout);
 closeAllPopovers();
 renderFavorites();
 renderFavoriteChannels();
