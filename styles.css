@@ -2076,19 +2076,34 @@ body.device-tablet {
 @media (max-width: 1280px) {
   body.device-tablet .workspace {
     grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: auto auto minmax(0, 1fr);
     align-items: stretch;
     gap: 16px;
+    min-height: calc(var(--app-height) - 40px);
+    height: calc(var(--app-height) - 40px);
+  }
+
+  body.device-tablet {
+    overflow: hidden;
+  }
+
+  body.device-tablet .app-shell {
+    height: var(--app-height);
+    overflow: hidden;
   }
 
   body.device-tablet .player-panel,
   body.device-tablet .control-panel,
   body.device-tablet .search-panel {
     grid-column: 1;
+    min-height: 0;
   }
 
   body.device-tablet .transcript-panel {
     grid-column: 2;
     grid-row: 1 / span 3;
+    min-height: 0;
+    height: 100%;
     overflow: hidden;
     padding-top: 12px;
     padding-bottom: 12px;
@@ -2105,7 +2120,7 @@ body.device-tablet {
 
   body.device-tablet .player-panel .section-title,
   body.device-tablet .player-panel > .now-playing {
-    display: block;
+    display: none;
   }
 
   body.device-tablet .player-panel > .player-wrap {
@@ -2119,6 +2134,8 @@ body.device-tablet {
     gap: 10px;
     padding-top: 12px;
     padding-bottom: 12px;
+    position: relative;
+    z-index: 2;
   }
 
   body.device-tablet .compact-controls {
@@ -2177,9 +2194,36 @@ body.device-tablet {
     border-radius: 12px;
   }
 
+  body.device-tablet .search-panel {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.device-tablet .search-grid,
+  body.device-tablet .search-grid-wide {
+    min-height: 0;
+    flex: 1;
+    align-items: stretch;
+  }
+
+  body.device-tablet .list-section {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.device-tablet .video-list,
+  body.device-tablet .video-list.compact,
   body.device-tablet .transcript-list {
-    min-height: 420px;
+    min-height: 0;
     max-height: none;
+    height: 100%;
+  }
+
+  body.device-tablet .transcript-list {
+    margin-top: 0;
   }
 
   body.device-tablet .cue-time {
