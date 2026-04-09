@@ -2308,6 +2308,10 @@ body.device-tablet {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
+  body.device-tablet .current-copy-cache {
+    display: grid;
+  }
+
   body.device-tablet .current-subtitle-actions {
     display: none;
   }

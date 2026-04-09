@@ -335,7 +335,9 @@ function syncTabletContentLayout(deviceLayout = detectDeviceLayout()) {
     }
 
     if (layoutNodes.controlPanel && layoutNodes.secondaryControls && layoutNodes.loadField.parentNode !== layoutNodes.controlPanel) {
-      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.secondaryControls);
+      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.secondaryControls.nextSibling);
+    } else if (layoutNodes.controlPanel && layoutNodes.secondaryControls) {
+      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.secondaryControls.nextSibling);
     } else if (layoutNodes.controlPanel && layoutNodes.transportControls && layoutNodes.loadField.parentNode !== layoutNodes.controlPanel) {
       layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.transportControls.nextSibling);
     }
