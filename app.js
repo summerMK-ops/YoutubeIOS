@@ -86,13 +86,19 @@ function syncViewportHeight() {
 function detectDeviceLayout() {
   const width = window.visualViewport?.width || window.innerWidth || 0;
   const touchPoints = navigator.maxTouchPoints || 0;
-  const isTouchDevice = touchPoints > 0 || /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+  const userAgent = navigator.userAgent || "";
+  const isAppleTablet = /iPad/.test(userAgent) || (navigator.platform === "MacIntel" && touchPoints > 1);
+  const isTouchDevice = touchPoints > 0 || /iPad|iPhone|iPod/.test(userAgent);
+
+  if (isAppleTablet) {
+    return "tablet";
+  }
 
   if (isTouchDevice && width <= 860) {
     return width >= 768 ? "tablet" : "phone";
   }
 
-  if (isTouchDevice && width <= 1280) {
+  if (isTouchDevice && width <= 1440) {
     return "tablet";
   }
 

@@ -1593,7 +1593,7 @@ body.transcript-english-only .cue-translation {
   }
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1440px) {
   body {
     overflow: auto;
   }
@@ -2082,7 +2082,7 @@ body.device-tablet {
   --font-scale: 0.92;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1440px) {
   body.device-tablet .workspace {
     grid-template-columns: minmax(0, 1fr) 360px;
     grid-template-rows: auto auto minmax(0, 1fr);
