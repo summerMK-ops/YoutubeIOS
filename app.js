@@ -126,6 +126,35 @@ function syncKeyboardOpenState() {
   document.body.classList.toggle("keyboard-open", Boolean(isTextInput));
 }
 
+function enableDirectTextInput(input) {
+  if (!(input instanceof HTMLElement)) {
+    return;
+  }
+
+  const focusInput = () => {
+    window.setTimeout(() => {
+      input.focus({ preventScroll: true });
+      if (typeof input.select === "function") {
+        input.select();
+      }
+    }, 0);
+  };
+
+  input.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+
+  input.addEventListener("touchstart", (event) => {
+    event.stopPropagation();
+    focusInput();
+  }, { passive: true });
+
+  input.addEventListener("click", (event) => {
+    event.stopPropagation();
+    focusInput();
+  });
+}
+
 function loadYouTubeIframeApi() {
   if (window.YT?.Player) {
     return Promise.resolve();
@@ -4385,6 +4414,8 @@ document.addEventListener("focusin", syncKeyboardOpenState);
 document.addEventListener("focusout", () => {
   window.setTimeout(syncKeyboardOpenState, 0);
 });
+enableDirectTextInput(elements.urlInput);
+enableDirectTextInput(elements.searchQuery);
 closeAllPopovers();
 renderFavorites();
 renderFavoriteChannels();

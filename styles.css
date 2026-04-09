@@ -559,7 +559,8 @@ select {
 .compact-load-field {
   margin-top: 0;
   position: relative;
-  z-index: 2;
+  z-index: 8;
+  isolation: isolate;
 }
 
 .compact-load-field span {
@@ -570,11 +571,22 @@ select {
 .compact-load-field input[type="text"],
 .compact-load-field #load-video {
   position: relative;
-  z-index: 2;
+  z-index: 8;
   pointer-events: auto;
 }
 
 .compact-load-field input[type="text"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+  touch-action: manipulation;
+}
+
+#youtube-url,
+#search-query {
+  position: relative;
+  z-index: 8;
+  pointer-events: auto;
   -webkit-user-select: text;
   user-select: text;
   -webkit-touch-callout: default;
