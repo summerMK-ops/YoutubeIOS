@@ -1,10 +1,10 @@
-﻿const sampleSubtitles = [
-  { start: 0, end: 4.2, text: "Welcome back to the channel.", translation: "繝√Ε繝ｳ繝阪Ν縺ｸ繧医≧縺薙◎縲・ },
-  { start: 4.2, end: 8.7, text: "Today we are building a subtitle-powered learning player.", translation: "莉頑律縺ｯ蟄怜ｹ暮｣蜍輔・蟄ｦ鄙偵・繝ｬ繧､繝､繝ｼ繧剃ｽ懊ｊ縺ｾ縺吶・ },
-  { start: 8.7, end: 13.5, text: "You can search videos, open recommendations, and follow the transcript!", translation: "蜍慕判讀懃ｴ｢縲√♀縺吶☆繧∬｡ｨ遉ｺ縲∝ｭ怜ｹ戊ｿｽ蠕薙′縺ｧ縺阪∪縺吶・ }
+const sampleSubtitles = [
+  { start: 0, end: 4.2, text: "Welcome back to the channel.", translation: "チャンネルへようこそ。" },
+  { start: 4.2, end: 8.7, text: "Today we are building a subtitle-powered learning player.", translation: "今日は字幕連動の学習プレイヤーを作ります。" },
+  { start: 8.7, end: 13.5, text: "You can search videos, open recommendations, and follow the transcript!", translation: "動画検索、おすすめ表示、字幕追従ができます。" }
 ];
 
-const PUNCTUATION_END_RE = /([.?!]+|[縲ゑｼ・ｼ歉+)["')\]]*$/;
+const PUNCTUATION_END_RE = /([.?!]+|[。！？]+)["')\]]*$/;
 const ACTIVE_CUE_LOOKAHEAD = 0.2;
 const ACTIVE_CUE_HOLD = 0.28;
 const DEFAULT_VIDEO_ID = "G2Yi-NQDBSM";
@@ -370,10 +370,12 @@ function syncTabletContentLayout(deviceLayout = detectDeviceLayout()) {
       layoutNodes.playerPanel.insertBefore(layoutNodes.currentSubtitleBox, layoutNodes.playerWrap.nextSibling);
     }
 
-    if (layoutNodes.controlPanel && layoutNodes.transportControls) {
-      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.transportControls.nextSibling);
+    if (layoutNodes.controlPanel && layoutNodes.secondaryControls && layoutNodes.loadField.parentNode !== layoutNodes.controlPanel) {
+      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.secondaryControls.nextSibling);
     } else if (layoutNodes.controlPanel && layoutNodes.secondaryControls) {
       layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.secondaryControls.nextSibling);
+    } else if (layoutNodes.controlPanel && layoutNodes.transportControls && layoutNodes.loadField.parentNode !== layoutNodes.controlPanel) {
+      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.transportControls.nextSibling);
     }
     return;
   }
@@ -382,42 +384,42 @@ function syncTabletContentLayout(deviceLayout = detectDeviceLayout()) {
   restoreLayoutNode(layoutNodes.loadField, layoutHomes.loadField);
 }
 
-const HEARGAP_TAG_OPTIONS = ["騾｣邨・, "閼ｱ關ｽ", "蠑ｱ蠖｢", "flap T", "逵∫払", "蠑ｷ蜍｢"];
+const HEARGAP_TAG_OPTIONS = ["連結", "脱落", "弱形", "flap T", "省略", "強勢"];
 const HEARGAP_WEAK_WORDS = new Set(["a", "an", "and", "are", "as", "at", "for", "from", "of", "or", "the", "to", "was", "were", "you"]);
 const HEARGAP_LINK_PAIRS = new Set(["kind of", "right now", "sort of", "what are", "going to", "want to"]);
 const HEARGAP_KANA_MAP = {
-  oh: "繧ｪ繧ｦ",
-  yeah: "繧､繧ｧ繝ｼ",
-  quit: "繧ｯ繧ｦ繧｣繝・,
-  right: "繝ｩ繧､繝・,
-  now: "繝翫え",
-  what: "繝ｯ繝・,
-  are: "繧｢繝ｼ",
-  you: "繝ｦ繝ｼ",
-  doing: "繝峨ぇ繝ｼ繧､繝ｳ",
-  there: "繧ｼ繧｢",
-  theres: "繧ｼ繧｢繧ｺ",
-  some: "繧ｵ繝",
-  honey: "繝上ル繝ｼ",
-  garlic: "繧ｬ繝ｼ繝ｪ繝・け",
-  and: "繝ｳ"
+  oh: "オウ",
+  yeah: "イェー",
+  quit: "クウィッ",
+  right: "ライト",
+  now: "ナウ",
+  what: "ワッ",
+  are: "アー",
+  you: "ユー",
+  doing: "ドゥーイン",
+  there: "ゼア",
+  theres: "ゼアズ",
+  some: "サム",
+  honey: "ハニー",
+  garlic: "ガーリック",
+  and: "ン"
 };
 const HEARGAP_IPA_MAP = {
-  oh: "oﾊ・,
-  yeah: "jﾉ嵋・,
-  quit: "kwﾉｪt",
-  right: "raﾉｪt",
-  now: "naﾊ・,
-  what: "wﾊ荊",
-  are: "ﾉ陀・,
-  you: "jﾉ・,
-  doing: "ﾋ・uﾋ惜ｪﾅ・,
-  there: "ﾃｰer",
-  theres: "ﾃｰerz",
-  some: "sﾉ冦",
-  honey: "ﾋ・ﾊ系i",
-  garlic: "ﾋ伊｡ﾉ喪lﾉｪk",
-  and: "ﾉ冢"
+  oh: "oʊ",
+  yeah: "jɛə",
+  quit: "kwɪt",
+  right: "raɪt",
+  now: "naʊ",
+  what: "wʌt",
+  are: "ɑɚ",
+  you: "jə",
+  doing: "ˈduːɪŋ",
+  there: "ðer",
+  theres: "ðerz",
+  some: "səm",
+  honey: "ˈhʌni",
+  garlic: "ˈɡɑrlɪk",
+  and: "ən"
 };
 
 function escapeHtml(text) {
@@ -448,56 +450,56 @@ function normalizeHearGapWord(word) {
 function fallbackHearGapKana(word) {
   return String(word || "")
     .toLowerCase()
-    .replace(/qu/g, "繧ｯ")
-    .replace(/th/g, "繧ｺ")
-    .replace(/sh/g, "繧ｷ繝･")
-    .replace(/ch/g, "繝・)
-    .replace(/ee/g, "繧､繝ｼ")
-    .replace(/oo/g, "繧ｦ繝ｼ")
-    .replace(/ou/g, "繧｢繧ｦ")
-    .replace(/ow/g, "繧｢繧ｦ")
-    .replace(/a/g, "繧｢")
-    .replace(/e/g, "繧ｨ")
-    .replace(/i/g, "繧､")
-    .replace(/o/g, "繧ｪ")
-    .replace(/u/g, "繧ｦ")
-    .replace(/b/g, "繝・)
-    .replace(/c/g, "繧ｯ")
-    .replace(/d/g, "繝・)
-    .replace(/f/g, "繝・)
-    .replace(/g/g, "繧ｰ")
-    .replace(/h/g, "繝・)
-    .replace(/j/g, "繧ｸ")
-    .replace(/k/g, "繧ｯ")
-    .replace(/l/g, "繝ｫ")
-    .replace(/m/g, "繝")
-    .replace(/n/g, "繝ｳ")
-    .replace(/p/g, "繝・)
-    .replace(/r/g, "繝ｫ")
-    .replace(/s/g, "繧ｹ")
-    .replace(/t/g, "繝・)
-    .replace(/v/g, "繝ｴ")
-    .replace(/w/g, "繧ｦ")
-    .replace(/y/g, "繧､")
-    .replace(/z/g, "繧ｺ");
+    .replace(/qu/g, "ク")
+    .replace(/th/g, "ズ")
+    .replace(/sh/g, "シュ")
+    .replace(/ch/g, "チ")
+    .replace(/ee/g, "イー")
+    .replace(/oo/g, "ウー")
+    .replace(/ou/g, "アウ")
+    .replace(/ow/g, "アウ")
+    .replace(/a/g, "ア")
+    .replace(/e/g, "エ")
+    .replace(/i/g, "イ")
+    .replace(/o/g, "オ")
+    .replace(/u/g, "ウ")
+    .replace(/b/g, "ブ")
+    .replace(/c/g, "ク")
+    .replace(/d/g, "ド")
+    .replace(/f/g, "フ")
+    .replace(/g/g, "グ")
+    .replace(/h/g, "ハ")
+    .replace(/j/g, "ジ")
+    .replace(/k/g, "ク")
+    .replace(/l/g, "ル")
+    .replace(/m/g, "ム")
+    .replace(/n/g, "ン")
+    .replace(/p/g, "プ")
+    .replace(/r/g, "ル")
+    .replace(/s/g, "ス")
+    .replace(/t/g, "ト")
+    .replace(/v/g, "ヴ")
+    .replace(/w/g, "ウ")
+    .replace(/y/g, "イ")
+    .replace(/z/g, "ズ");
 }
 
 function fallbackHearGapIpa(word) {
   return String(word || "")
     .toLowerCase()
     .replace(/qu/g, "kw")
-    .replace(/th/g, "ﾎｸ")
-    .replace(/sh/g, "ﾊ・)
-    .replace(/ch/g, "tﾊ・)
-    .replace(/ee/g, "iﾋ・)
-    .replace(/oo/g, "uﾋ・)
-    .replace(/ou/g, "aﾊ・)
-    .replace(/ow/g, "aﾊ・)
-    .replace(/a/g, "ﾃｦ")
+    .replace(/th/g, "θ")
+    .replace(/sh/g, "ʃ")
+    .replace(/ch/g, "tʃ")
+    .replace(/ee/g, "iː")
+    .replace(/oo/g, "uː")
+    .replace(/ou/g, "aʊ")
+    .replace(/ow/g, "aʊ")
+    .replace(/a/g, "æ")
     .replace(/e/g, "e")
-    .replace(/i/g, "ﾉｪ")
-    .replace(/o/g, "ﾉ・)
-    .replace(/u/g, "ﾊ・);
+    .replace(/i/g, "ɪ")
+    .replace(/o/g, "ɑ")
+    .replace(/u/g, "ʌ");
 }
 
 function buildHearGapData(cue) {
@@ -522,20 +524,20 @@ function buildHearGapData(cue) {
 
     if (first === "right" && second === "now") {
       heardTokens.push("right now");
-      kanaTokens.push("繝ｩ繧､繝翫え");
-      ipaTokens.push("raﾉｪt naﾊ・);
-      tags.push("騾｣邨・);
-      notes.push("right now 縺悟・繧後★縺ｫ縺ｾ縺ｨ縺ｾ縺｣縺ｦ閨槭％縺医ｋ縲・);
+      kanaTokens.push("ライナウ");
+      ipaTokens.push("raɪt naʊ");
+      tags.push("連結");
+      notes.push("right now が切れずにまとまって聞こえる。");
       index += 2;
       continue;
     }
 
     if (first === "what" && second === "are" && tokens[index + 2] === "you") {
       heardTokens.push("whaddaya");
-      kanaTokens.push("繝ｯ繝繝､");
-      ipaTokens.push("wﾊ庫ｾﾉ冕ﾉ・);
-      tags.push("騾｣邨・, "蠑ｱ蠖｢", "閼ｱ關ｽ");
-      notes.push("what are you 縺御ｸ蝪翫〒蟠ｩ繧後※閨槭％縺医ｋ縲・);
+      kanaTokens.push("ワダヤ");
+      ipaTokens.push("wʌɾəjə");
+      tags.push("連結", "弱形", "脱落");
+      notes.push("what are you が一塊で崩れて聞こえる。");
       index += 3;
       continue;
     }
@@ -546,16 +548,16 @@ function buildHearGapData(cue) {
 
     if (first === "you") {
       heardWord = "ya";
-      kanaWord = "繝､";
-      ipaWord = "jﾉ・;
-      tags.push("蠑ｱ蠖｢");
-      notes.push("you 縺悟ｼｱ縺・繝､ 縺ｫ霑代▼縺上・);
+      kanaWord = "ヤ";
+      ipaWord = "jə";
+      tags.push("弱形");
+      notes.push("you が弱く ヤ に近づく。");
     } else if (first === "and") {
       heardWord = "n";
-      kanaWord = "繝ｳ";
-      ipaWord = "ﾉ冢";
-      tags.push("蠑ｱ蠖｢");
-      notes.push("and 縺檎洒縺丞ｼｱ縺上↑繧九・);
+      kanaWord = "ン";
+      ipaWord = "ən";
+      tags.push("弱形");
+      notes.push("and が短く弱くなる。");
     }
 
     heardTokens.push(heardWord);
@@ -566,7 +568,7 @@ function buildHearGapData(cue) {
 
   if (/\b[a-z]+t [aeiou]/i.test(text) || /\bright\b/i.test(text)) {
     tags.push("flap T");
-    notes.push("t/d 縺瑚ｻｽ縺丞ｼｾ縺九ｌ縺ｦ閨槭％縺医ｋ蜿ｯ閭ｽ諤ｧ縺後≠繧九・);
+    notes.push("t/d が軽く弾かれて聞こえる可能性がある。");
   }
 
   return {
@@ -715,7 +717,7 @@ function updateHearGapControls() {
   }
 
   if (elements.heargapVisualToggle) {
-    elements.heargapVisualToggle.textContent = state.heargapVisualEnabled ? "髻ｳ螟牙喧 ON" : "髻ｳ螟牙喧 OFF";
+    elements.heargapVisualToggle.textContent = state.heargapVisualEnabled ? "音変化 ON" : "音変化 OFF";
     elements.heargapVisualToggle.setAttribute("aria-pressed", String(state.heargapVisualEnabled));
   }
 
@@ -743,7 +745,7 @@ function renderHearGapSheet() {
   elements.heargapIpa.textContent = data.ipa || "";
   elements.heargapTranslation.textContent = data.translation;
   elements.heargapRange.textContent = `${formatTime(data.start)} - ${formatTime(data.end)}`;
-  elements.heargapNote.textContent = data.note || "髻ｳ縺ｮ蟠ｩ繧梧婿繧偵％縺ｮ逕ｻ髱｢縺ｧ遒ｺ隱阪〒縺阪∪縺吶・;
+  elements.heargapNote.textContent = data.note || "音の崩れ方をこの画面で確認できます。";
   elements.heargapTags.innerHTML = data.tags.map((tag) => `<span class="heargap-tag">${escapeHtml(tag)}</span>`).join("");
   updateHearGapControls();
 }
@@ -1118,7 +1120,7 @@ function getCueTextUntilBoundary(startIndex) {
   }
 
   const parts = [];
-  const boundaryRe = /[.?!縲ゑｼ・ｼ歉/;
+  const boundaryRe = /[.?!。！？]/;
 
   for (let index = startIndex; index < state.subtitles.length; index += 1) {
     const text = String(state.subtitles[index]?.text || "").trim();
@@ -1220,7 +1222,7 @@ function updateSaveWordButton() {
   }
 
   const saved = isWordSaved(state.dictionaryEntry?.word || "");
-  elements.saveWord.textContent = saved ? "菫晏ｭ倩ｧ｣髯､" : "蜊倩ｪ槭ｒ菫晏ｭ・;
+  elements.saveWord.textContent = saved ? "保存解除" : "単語を保存";
   elements.saveWord.classList.toggle("is-saved", saved);
 }
 
@@ -1239,7 +1241,7 @@ function updateFavoriteButton() {
 
   const active = Boolean(state.currentVideoId) && isFavorite(state.currentVideoId);
   elements.toggleFavorite.classList.toggle("is-active", active);
-  elements.toggleFavorite.textContent = active ? "縺頑ｰ励↓蜈･繧頑ｸ医∩" : "縺頑ｰ励↓蜈･繧・;
+  elements.toggleFavorite.textContent = active ? "お気に入り済み" : "お気に入り";
 }
 
 function renderFavorites() {
@@ -1248,18 +1250,18 @@ function renderFavorites() {
   }
 
   if (!state.favorites.length) {
-    elements.favoritesList.innerHTML = '<div class="favorite-empty">縺頑ｰ励↓蜈･繧翫＠縺溷虚逕ｻ縺後％縺薙↓荳ｦ縺ｳ縺ｾ縺吶・/div>';
+    elements.favoritesList.innerHTML = '<div class="favorite-empty">お気に入りした動画がここに並びます。</div>';
     updateFavoriteButton();
     return;
   }
 
   elements.favoritesList.innerHTML = state.favorites.map((item) => `
     <article class="favorite-item ${item.videoId === state.currentVideoId ? "is-active" : ""}" data-video-id="${escapeHtml(item.videoId)}">
-      <img class="favorite-thumb" src="${escapeHtml(item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`)}" alt="${escapeHtml(item.title || "蜍慕判")}" />
+      <img class="favorite-thumb" src="${escapeHtml(item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`)}" alt="${escapeHtml(item.title || "動画")}" />
       <div class="favorite-copy">
         <div class="favorite-head">
-          <p class="favorite-title">${escapeHtml(item.title || "蜍慕判")}</p>
-          <button class="ghost favorite-remove" type="button" data-remove-video-id="${escapeHtml(item.videoId)}">隗｣髯､</button>
+          <p class="favorite-title">${escapeHtml(item.title || "動画")}</p>
+          <button class="ghost favorite-remove" type="button" data-remove-video-id="${escapeHtml(item.videoId)}">解除</button>
         </div>
         <p class="favorite-meta">${escapeHtml(item.channelName || "")}</p>
       </div>
@@ -1304,7 +1306,7 @@ function renderFavoriteChannels() {
   }
 
   if (!state.favoriteChannels.length) {
-    elements.favoriteChannelsList.innerHTML = '<div class="favorite-empty">縺頑ｰ励↓蜈･繧翫＠縺溘メ繝｣繝ｳ繝阪Ν縺後％縺薙↓荳ｦ縺ｳ縺ｾ縺吶・/div>';
+    elements.favoriteChannelsList.innerHTML = '<div class="favorite-empty">お気に入りしたチャンネルがここに並びます。</div>';
     updateFavoriteChannelButton();
     return;
   }
@@ -1315,7 +1317,7 @@ function renderFavoriteChannels() {
       <div class="favorite-copy">
         <div class="favorite-head">
           <p class="favorite-title">${escapeHtml(item.channelName || "Channel")}</p>
-          <button class="ghost favorite-remove" type="button" data-remove-channel-id="${escapeHtml(item.channelId)}">隗｣髯､</button>
+          <button class="ghost favorite-remove" type="button" data-remove-channel-id="${escapeHtml(item.channelId)}">解除</button>
         </div>
         <p class="favorite-meta">${escapeHtml(item.videoTitle || "")}</p>
       </div>
@@ -1349,7 +1351,7 @@ function renderSavedWords() {
   }
 
   if (!state.savedWords.length) {
-    elements.savedWordsList.innerHTML = '<div class="saved-word-empty">菫晏ｭ倥＠縺溷腰隱槭′縺薙％縺ｫ荳ｦ縺ｳ縺ｾ縺吶・/div>';
+    elements.savedWordsList.innerHTML = '<div class="saved-word-empty">保存した単語がここに並びます。</div>';
     return;
   }
 
@@ -1357,10 +1359,10 @@ function renderSavedWords() {
     <article class="saved-word-item" data-word="${escapeHtml(item.word)}">
       <div class="saved-word-head">
         <p class="saved-word-title">${escapeHtml(item.word)}</p>
-        <button class="ghost saved-word-remove" type="button" data-remove-word="${escapeHtml(item.word)}">隗｣髯､</button>
+        <button class="ghost saved-word-remove" type="button" data-remove-word="${escapeHtml(item.word)}">解除</button>
       </div>
-      <p class="saved-word-meta">${escapeHtml(item.meaning || "諢丞袖縺ｯ縺ｾ縺縺ゅｊ縺ｾ縺帙ｓ縲・)}</p>
-      <p class="saved-word-context">${escapeHtml(item.context || "菫晏ｭ俶凾縺ｮ闍ｱ譁・・縺ゅｊ縺ｾ縺帙ｓ縲・)}</p>
+      <p class="saved-word-meta">${escapeHtml(item.meaning || "意味はまだありません。")}</p>
+      <p class="saved-word-context">${escapeHtml(item.context || "保存時の英文はありません。")}</p>
     </article>
   `).join("");
 
@@ -1388,7 +1390,7 @@ function updateSaveCurrentLineButton() {
   const cue = getActiveCue();
   const saved = isLineSaved(cue);
   elements.saveCurrentLine.classList.toggle("is-active", saved);
-  elements.saveCurrentLine.innerHTML = `<span aria-hidden="true">${saved ? "笘・ : "笨ｦ"}</span>`;
+  elements.saveCurrentLine.innerHTML = `<span aria-hidden="true">${saved ? "★" : "✦"}</span>`;
   elements.saveCurrentLine.setAttribute("aria-label", saved ? "Saved current English line" : "Save current English line");
 }
 
@@ -1506,7 +1508,7 @@ function toggleFavoriteCurrentVideo() {
   } else {
     state.favorites.unshift({
       videoId: state.currentVideoId,
-      title: state.selectedVideoMeta?.title || "YouTube蜍慕判",
+      title: state.selectedVideoMeta?.title || "YouTube動画",
       channelName: state.selectedVideoMeta?.channelName || "",
       thumbnail: state.selectedVideoMeta?.thumbnail || `https://i.ytimg.com/vi/${state.currentVideoId}/hqdefault.jpg`,
       url: `https://www.youtube.com/watch?v=${state.currentVideoId}`
@@ -1667,9 +1669,9 @@ function applyTranscriptVisibility(mode) {
   document.body.classList.toggle("transcript-english-only", nextMode === "english");
   if (elements.transcriptVisibilityToggle) {
     const labels = {
-      both: "譁・ｭ涌N",
-      english: "闍ｱ譁・・縺ｿ",
-      hidden: "譁・ｭ涌FF"
+      both: "文字ON",
+      english: "英文のみ",
+      hidden: "文字OFF"
     };
     elements.transcriptVisibilityToggle.textContent = labels[nextMode];
     elements.transcriptVisibilityToggle.setAttribute("aria-pressed", nextMode === "hidden" ? "true" : "false");
@@ -1709,7 +1711,7 @@ function updatePipButton() {
   }
 
   elements.pipToggle.disabled = !supported;
-  elements.pipToggle.textContent = active ? "PiP荳ｭ" : "PiP";
+  elements.pipToggle.textContent = active ? "PiP中" : "PiP";
   elements.pipToggle.setAttribute("aria-pressed", active ? "true" : "false");
 }
 
@@ -1792,14 +1794,14 @@ function formatTime(seconds) {
 function updateNowPlaying(meta = null) {
   state.selectedVideoMeta = meta;
   if (!meta) {
-    elements.videoTitle.textContent = "蜍慕判繧帝∈縺ｶ縺ｨ繧ｿ繧､繝医Ν縺後％縺薙↓陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶・;
-    elements.videoMeta.textContent = "繝√Ε繝ｳ繝阪Ν蜷阪ｄ蜀咲函譎る俣縺ｪ縺ｩ繧定｡ｨ遉ｺ縺励∪縺吶・;
+    elements.videoTitle.textContent = "動画を選ぶとタイトルがここに表示されます。";
+    elements.videoMeta.textContent = "チャンネル名や再生時間などを表示します。";
     updateFavoriteButton();
     updateFavoriteChannelButton();
     return;
   }
 
-  elements.videoTitle.textContent = meta.title || "蜍慕判繧ｿ繧､繝医Ν";
+  elements.videoTitle.textContent = meta.title || "動画タイトル";
   elements.videoMeta.textContent = [meta.channelName, meta.lengthText, meta.viewCountText, meta.publishedTimeText]
     .filter(Boolean)
     .join(" / ");
@@ -1820,7 +1822,7 @@ function getInitialVideoMeta() {
 
   return {
     videoId: DEFAULT_VIDEO_ID,
-    title: "YouTube蜍慕判",
+    title: "YouTube動画",
     channelName: "",
     lengthText: "",
     viewCountText: "",
@@ -1836,7 +1838,7 @@ function normalizeSubtitleEntry(entry, index) {
   const translation = `${entry.translation ?? entry.ja ?? ""}`.trim();
 
   if (!Number.isFinite(start) || !Number.isFinite(end) || !text) {
-    throw new Error(`蟄怜ｹ・${index + 1} 陦檎岼縺ｮ蠖｢蠑上′荳肴ｭ｣縺ｧ縺吶Ａ);
+    throw new Error(`字幕 ${index + 1} 行目の形式が不正です。`);
   }
 
   return {
@@ -1850,7 +1852,7 @@ function normalizeSubtitleEntry(entry, index) {
 function parseJsonSubtitles(content) {
   const parsed = JSON.parse(content);
   if (!Array.isArray(parsed)) {
-    throw new Error("JSON 縺ｯ驟榊・蠖｢蠑上〒縺ゅｋ蠢・ｦ√′縺ゅｊ縺ｾ縺吶・);
+    throw new Error("JSON は配列形式である必要があります。");
   }
   return parsed.map(normalizeSubtitleEntry).sort((a, b) => a.start - b.start);
 }
@@ -1859,7 +1861,7 @@ function parseTimestamp(raw) {
   const normalized = raw.trim().replace(",", ".");
   const parts = normalized.split(":").map(Number);
   if (parts.some((value) => !Number.isFinite(value))) {
-    throw new Error(`繧ｿ繧､繝繧ｹ繧ｿ繝ｳ繝励ｒ隗｣驥医〒縺阪∪縺帙ｓ: ${raw}`);
+    throw new Error(`タイムスタンプを解釈できません: ${raw}`);
   }
 
   let seconds = 0;
@@ -1941,7 +1943,7 @@ function buildCueGroups(subtitles) {
 function setTrackOptions(tracks) {
   state.trackOptions = tracks;
   if (!tracks.length) {
-    elements.subtitleTrack.innerHTML = "<option value=\"\">蛻ｩ逕ｨ蜿ｯ閭ｽ縺ｪ蟄怜ｹ輔ヨ繝ｩ繝・け縺ｯ縺ゅｊ縺ｾ縺帙ｓ</option>";
+    elements.subtitleTrack.innerHTML = "<option value=\"\">利用可能な字幕トラックはありません</option>";
     return;
   }
 
@@ -1953,7 +1955,7 @@ function setTrackOptions(tracks) {
 function clearRepeatMode(silent = false) {
   state.repeatMode = null;
   if (!silent) {
-    setRepeatStatus("繝ｪ繝斐・繝医・繧ｪ繝輔〒縺吶・);
+    setRepeatStatus("リピートはオフです。");
   }
   updateRepeatButtons();
 }
@@ -1961,18 +1963,18 @@ function clearRepeatMode(silent = false) {
 function setRepeatMode(mode) {
   state.repeatMode = mode;
   if (!mode) {
-    setRepeatStatus("繝ｪ繝斐・繝医・繧ｪ繝輔〒縺吶・);
+    setRepeatStatus("リピートはオフです。");
     updateRepeatButtons();
     return;
   }
 
   if (mode.type === "cue") {
-    setRepeatStatus(`蟄怜ｹ・${mode.index + 1} 繧偵Μ繝斐・繝井ｸｭ縺ｧ縺吶Ａ);
+    setRepeatStatus(`字幕 ${mode.index + 1} をリピート中です。`);
     updateRepeatButtons();
     return;
   }
 
-  setRepeatStatus(`蜿･隱ｭ轤ｹ縺ｾ縺ｨ縺ｾ繧・${mode.index + 1} 繧偵Μ繝斐・繝井ｸｭ縺ｧ縺吶Ａ);
+  setRepeatStatus(`句読点まとまり ${mode.index + 1} をリピート中です。`);
   updateRepeatButtons();
 }
 
@@ -2050,14 +2052,14 @@ function applySubtitleData(subtitles, statusMessage) {
   state.cueGroups = groups;
   state.cueGroupMap = cueGroupMap;
   clearRepeatMode(true);
-  setRepeatStatus("繝ｪ繝斐・繝医・繧ｪ繝輔〒縺吶・);
+  setRepeatStatus("リピートはオフです。");
   setSubtitleStatus(statusMessage);
   renderTranscript();
   syncActiveCue(true);
 }
 
 function getTranslationPlaceholder() {
-  return state.translationPending ? "鄙ｻ險ｳ繧定ｪｭ縺ｿ霎ｼ縺ｿ荳ｭ..." : "鄙ｻ險ｳ縺ｯ縺ゅｊ縺ｾ縺帙ｓ";
+  return state.translationPending ? "翻訳を読み込み中..." : "翻訳はありません";
 }
 
 function mergeSubtitleTranslations(currentSubtitles, translatedSubtitles) {
@@ -2102,7 +2104,7 @@ function countTranslatedSubtitles(subtitles) {
 
 function renderTranscript() {
   if (!state.subtitles.length) {
-    renderEmptyState(elements.transcriptList, "蟄怜ｹ輔ｒ隱ｭ縺ｿ霎ｼ繧縺ｨ縲√％縺薙↓繧ｿ繧､繝繧ｹ繧ｿ繝ｳ繝嶺ｸ隕ｧ縺瑚｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶・);
+    renderEmptyState(elements.transcriptList, "字幕を読み込むと、ここにタイムスタンプ一覧が表示されます。");
     return;
   }
 
@@ -2123,9 +2125,9 @@ function renderTranscript() {
         <div class="cue-meta">
           <div class="cue-time">${formatTime(cue.start)} - ${formatTime(cue.end)}</div>
           <div class="cue-action-group">
-            <button class="ghost cue-save-symbol ${isLineSaved(cue) ? "is-active" : ""}" type="button" data-save-index="${index}" aria-label="Save highlighted English line">${isLineSaved(cue) ? "笘・ : "笨ｦ"}</button>
-            <button class="ghost cue-group-copy-symbol" type="button" data-copy-group-index="${index}" aria-label="Copy current sentence group" data-label-default="ﾂｶ" data-feedback-label="笨・>ﾂｶ</button>
-            <button class="ghost cue-copy-symbol" type="button" data-copy-index="${index}" aria-label="Copy highlighted English line" data-label-default="筴・ data-feedback-label="笨・>筴・/button>
+            <button class="ghost cue-save-symbol ${isLineSaved(cue) ? "is-active" : ""}" type="button" data-save-index="${index}" aria-label="Save highlighted English line">${isLineSaved(cue) ? "★" : "✦"}</button>
+            <button class="ghost cue-group-copy-symbol" type="button" data-copy-group-index="${index}" aria-label="Copy current sentence group" data-label-default="¶" data-feedback-label="✓">¶</button>
+            <button class="ghost cue-copy-symbol" type="button" data-copy-index="${index}" aria-label="Copy highlighted English line" data-label-default="⧉" data-feedback-label="✓">⧉</button>
           </div>
         </div>
         <p class="cue-original">${renderWordMarkup(cue.text)}</p>
@@ -2193,19 +2195,19 @@ function renderHistory() {
   }
 
   if (!state.history.length) {
-    elements.historyList.innerHTML = '<div class="favorite-empty">隕冶・螻･豁ｴ縺後％縺薙↓荳ｦ縺ｳ縺ｾ縺吶・/div>';
+    elements.historyList.innerHTML = '<div class="favorite-empty">視聴履歴がここに並びます。</div>';
     return;
   }
 
   elements.historyList.innerHTML = state.history.map((item) => `
     <article class="favorite-item ${item.videoId === state.currentVideoId ? "is-active" : ""}" data-video-id="${escapeHtml(item.videoId)}">
-      <img class="favorite-thumb" src="${escapeHtml(item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`)}" alt="${escapeHtml(item.title || "蜍慕判")}" />
+      <img class="favorite-thumb" src="${escapeHtml(item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`)}" alt="${escapeHtml(item.title || "動画")}" />
       <div class="favorite-copy">
         <div class="favorite-head">
-          <p class="favorite-title">${escapeHtml(item.title || "蜍慕判")}</p>
-          <button class="ghost favorite-remove" type="button" data-remove-history-id="${escapeHtml(item.videoId)}">隗｣髯､</button>
+          <p class="favorite-title">${escapeHtml(item.title || "動画")}</p>
+          <button class="ghost favorite-remove" type="button" data-remove-history-id="${escapeHtml(item.videoId)}">解除</button>
         </div>
-        <p class="favorite-meta">${escapeHtml([item.channelName || "", item.resumeTime ? `${formatTime(item.resumeTime)} 縺九ｉ蜀埼幕` : ""].filter(Boolean).join(" / "))}</p>
+        <p class="favorite-meta">${escapeHtml([item.channelName || "", item.resumeTime ? `${formatTime(item.resumeTime)} から再開` : ""].filter(Boolean).join(" / "))}</p>
       </div>
     </article>
   `).join("");
@@ -2236,7 +2238,7 @@ function saveHistoryItem(item) {
   const resumeTime = getSavedPlaybackTime(item.videoId);
   const nextItem = {
     videoId: item.videoId,
-    title: item.title || "YouTube蜍慕判",
+    title: item.title || "YouTube動画",
     channelName: item.channelName || "",
     thumbnail: item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
     url: item.url || `https://www.youtube.com/watch?v=${item.videoId}`,
@@ -2301,12 +2303,12 @@ function bindWordLookup(container, context) {
 
 function updatePlaybackButton() {
   if (!state.playerReady || !state.player?.getPlayerState) {
-    elements.togglePlayback.textContent = "蜀咲函";
+    elements.togglePlayback.textContent = "再生";
     return;
   }
 
   const playerState = state.player.getPlayerState();
-  elements.togglePlayback.textContent = playerState === window.YT?.PlayerState?.PLAYING ? "荳譎ょ●豁｢" : "蜀咲函";
+  elements.togglePlayback.textContent = playerState === window.YT?.PlayerState?.PLAYING ? "一時停止" : "再生";
 }
 
 elements.openHearGapSheet?.addEventListener("click", () => {
@@ -2375,8 +2377,8 @@ function updateActiveCue(index, forceScroll = false) {
   }
   const cue = state.subtitles[index];
   if (!cue) {
-    elements.currentOriginal.textContent = "蟄怜ｹ輔・縺ｾ縺縺ゅｊ縺ｾ縺帙ｓ縲・;
-    elements.currentTranslation.textContent = "蜍慕判繧貞・逕溘☆繧九→縲√％縺薙↓迴ｾ蝨ｨ縺ｮ蟄怜ｹ輔′陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶・;
+    elements.currentOriginal.textContent = "字幕はまだありません。";
+    elements.currentTranslation.textContent = "動画を再生すると、ここに現在の字幕が表示されます。";
     updateRepeatButtons();
     return;
   }
@@ -2716,7 +2718,7 @@ function renderDictionaryEntry(entry) {
       `;
     }).join(""));
   } else {
-    parts.push("<p>諢丞袖縺ｯ隕九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆縲・/p>");
+    parts.push("<p>意味は見つかりませんでした。</p>");
   }
 
   if (entry.context) {
@@ -2754,7 +2756,7 @@ async function openDictionaryForWord(word, options = {}) {
   elements.dictionaryPopup.classList.remove("hidden");
   elements.dictionaryWord.textContent = normalizedWord;
   elements.dictionaryPhonetic.textContent = "";
-  elements.dictionaryBody.innerHTML = "<p>霎樊嶌繧定ｪｭ縺ｿ霎ｼ繧薙〒縺・∪縺・..</p>";
+  elements.dictionaryBody.innerHTML = "<p>辞書を読み込んでいます...</p>";
   const context = options.context || options.savedItem?.context || state.subtitles[state.activeIndex]?.text || "";
   state.dictionaryEntry = {
     word: normalizedWord,
@@ -2777,7 +2779,7 @@ async function openDictionaryForWord(word, options = {}) {
     updateSaveWordButton();
     playDictionaryAudio(state.dictionaryEntry);
   } catch (error) {
-    elements.dictionaryBody.innerHTML = `<p>${escapeHtml(error.message || "霎樊嶌諠・ｱ繧貞叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆縲・)}</p>`;
+    elements.dictionaryBody.innerHTML = `<p>${escapeHtml(error.message || "辞書情報を取得できませんでした。")}</p>`;
     updateSaveWordButton();
   }
 }
@@ -2828,7 +2830,7 @@ async function fetchJson(url, options = {}) {
   const response = await fetch(url, options);
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.error || "繝・・繧ｿ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆縲・);
+    throw new Error(payload.error || "データ取得に失敗しました。");
   }
   return payload;
 }
@@ -2851,7 +2853,7 @@ function mergeVideoMeta(baseItem, nextMeta) {
     ...nextMeta,
     videoId: nextMeta?.videoId || baseItem?.videoId || "",
     channelId: nextMeta?.channelId || baseItem?.channelId || "",
-    title: nextMeta?.title || baseItem?.title || "YouTube蜍慕判",
+    title: nextMeta?.title || baseItem?.title || "YouTube動画",
     channelName: nextMeta?.channelName || baseItem?.channelName || "",
     thumbnail: nextMeta?.thumbnail || baseItem?.thumbnail || "",
     url: nextMeta?.url || baseItem?.url || ""
@@ -2924,7 +2926,7 @@ async function enrichVideoMetaInBackground(item, videoId) {
 
 function renderVideoList(target, items, onSelect) {
   if (!items.length) {
-    renderEmptyState(target, "蜍慕判縺後≠繧翫∪縺帙ｓ縲・);
+    renderEmptyState(target, "動画がありません。");
     return;
   }
 
@@ -2933,8 +2935,8 @@ function renderVideoList(target, items, onSelect) {
       <img class="video-thumb" src="${escapeHtml(item.thumbnail)}" alt="${escapeHtml(item.title)}">
       <div>
         <h3>${escapeHtml(item.title)}</h3>
-        <p>${escapeHtml(item.channelName || "繝√Ε繝ｳ繝阪Ν諠・ｱ縺ｪ縺・)}</p>
-        <p>${escapeHtml([item.lengthText, item.viewCountText, item.publishedTimeText].filter(Boolean).join(" / ") || "霑ｽ蜉諠・ｱ縺ｪ縺・)}</p>
+        <p>${escapeHtml(item.channelName || "チャンネル情報なし")}</p>
+        <p>${escapeHtml([item.lengthText, item.viewCountText, item.publishedTimeText].filter(Boolean).join(" / ") || "追加情報なし")}</p>
       </div>
     </article>
   `).join("");
@@ -2955,29 +2957,29 @@ async function loadSearch(query) {
     return;
   }
 
-  elements.searchStatus.textContent = "讀懃ｴ｢縺励※縺・∪縺・..";
+  elements.searchStatus.textContent = "検索しています...";
   const payload = await fetchJson(`/api/search?q=${encodeURIComponent(trimmed)}`);
   state.searchResults = payload.items || [];
-  elements.searchStatus.textContent = `${payload.items.length} 莉ｶ縺ｮ蜍慕判縺瑚ｦ九▽縺九ｊ縺ｾ縺励◆縲Ａ;
+  elements.searchStatus.textContent = `${payload.items.length} 件の動画が見つかりました。`;
   renderVideoList(elements.searchResults, state.searchResults, handleVideoSelection);
 }
 
 async function loadRecommendations(videoId) {
-  elements.recommendationStatus.textContent = "縺翫☆縺吶ａ蜍慕判繧定ｪｭ縺ｿ霎ｼ縺ｿ荳ｭ縺ｧ縺・..";
+  elements.recommendationStatus.textContent = "おすすめ動画を読み込み中です...";
   try {
     const payload = await fetchJson(`/api/recommendations?videoId=${encodeURIComponent(videoId)}`);
     state.recommendations = payload.items || [];
     if (!state.recommendations.length) {
-      elements.recommendationStatus.textContent = "縺翫☆縺吶ａ蜍慕判縺ｯ隕九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆縲・;
-      renderEmptyState(elements.recommendations, "髢｢騾｣蜍慕判縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆縲・);
+      elements.recommendationStatus.textContent = "おすすめ動画は見つかりませんでした。";
+      renderEmptyState(elements.recommendations, "関連動画が見つかりませんでした。");
       return;
     }
 
-    elements.recommendationStatus.textContent = `${state.recommendations.length} 莉ｶ縺ｮ縺翫☆縺吶ａ蜍慕判繧定｡ｨ遉ｺ縺励※縺・∪縺吶Ａ;
+    elements.recommendationStatus.textContent = `${state.recommendations.length} 件のおすすめ動画を表示しています。`;
     renderVideoList(elements.recommendations, state.recommendations, handleVideoSelection);
   } catch (error) {
-    elements.recommendationStatus.textContent = error.message || "縺翫☆縺吶ａ蜍慕判縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆縲・;
-    renderEmptyState(elements.recommendations, "縺翫☆縺吶ａ蜍慕判繧定ｪｭ縺ｿ霎ｼ繧√∪縺帙ｓ縺ｧ縺励◆縲・);
+    elements.recommendationStatus.textContent = error.message || "おすすめ動画の取得に失敗しました。";
+    renderEmptyState(elements.recommendations, "おすすめ動画を読み込めませんでした。");
   }
 }
 
@@ -2985,23 +2987,23 @@ function buildTranscriptStatus(payload, language, options = {}) {
   const subtitles = Array.isArray(payload?.subtitles) ? payload.subtitles : [];
   const translatedCount = subtitles.filter((item) => item.translation).length;
   const messages = [
-    `${payload.trackLabel} 繧定ｪｭ縺ｿ霎ｼ縺ｿ縺ｾ縺励◆縲Ａ,
-    `${subtitles.length} 莉ｶ縺ｮ蟄怜ｹ輔′縺ゅｊ縺ｾ縺吶Ａ
+    `${payload.trackLabel} を読み込みました。`,
+    `${subtitles.length} 件の字幕があります。`
   ];
 
   if (options.translationPending) {
-    messages.push("闍ｱ隱槫ｭ怜ｹ輔ｒ蜈医↓陦ｨ遉ｺ縺励※縺・∪縺吶・);
-    messages.push(`${language} 縺ｮ鄙ｻ險ｳ繧貞叙蠕励＠縺ｦ縺・∪縺・..`);
+    messages.push("英語字幕を先に表示しています。");
+    messages.push(`${language} の翻訳を取得しています...`);
     return messages.join(" ");
   }
 
   if (options.translationFailed) {
-    messages.push("闍ｱ隱槫ｭ怜ｹ輔ｒ陦ｨ遉ｺ荳ｭ縺ｧ縺吶・);
-    messages.push(`${language} 縺ｮ鄙ｻ險ｳ縺ｯ縺ｾ縺蜿門ｾ励〒縺阪※縺・∪縺帙ｓ縲Ａ);
+    messages.push("英語字幕を表示中です。");
+    messages.push(`${language} の翻訳はまだ取得できていません。`);
     return messages.join(" ");
   }
 
-  messages.push(translatedCount ? `${language} 縺ｮ鄙ｻ險ｳ繧定｡ｨ遉ｺ縺ｧ縺阪∪縺吶Ａ : `${language} 縺ｮ鄙ｻ險ｳ縺ｯ縺ｾ縺縺ゅｊ縺ｾ縺帙ｓ縲Ａ);
+  messages.push(translatedCount ? `${language} の翻訳を表示できます。` : `${language} の翻訳はまだありません。`);
   return messages.join(" ");
 }
 
@@ -3066,20 +3068,20 @@ function splitGroupedTranslation(translation, originalTexts) {
 
   const stripDisplayMarkers = (value) =>
     String(value || "")
-      .replace(/縲申d+縲曾s*/g, "")
+      .replace(/【\d+】\s*/g, "")
       .replace(/\[\[(\d+)\]\]\s*/g, "")
       .replace(/__LINE_\d+__\s*/g, "")
       .replace(/^\[\d+\]\s*/g, "")
-      .replace(/^\d+[\.\):・咯\s*/g, "")
+      .replace(/^\d+[\.\):：]\s*/g, "")
       .trim();
   const normalizePart = (part) => stripDisplayMarkers(String(part || "").replace(/\s+/g, " ").trim());
   const lineWeights = sourceTexts.map((text) => Math.max(1, normalizePart(text).length));
   const sentenceParts = normalized
-    .split(/(?<=[縲ゑｼ・ｼ・?])\s+|\n+/)
+    .split(/(?<=[。！？!?])\s+|\n+/)
     .map(normalizePart)
     .filter(Boolean);
   const clauseParts = normalized
-    .split(/(?<=縲・\s*|(?<=[縲ゑｼ・ｼ・?])\s*|\n+/)
+    .split(/(?<=、)\s*|(?<=[。！？!?])\s*|\n+/)
     .map(normalizePart)
     .filter(Boolean);
 
@@ -3090,12 +3092,12 @@ function splitGroupedTranslation(translation, originalTexts) {
         return [];
       }
 
-      const topicMatch = normalizedPart.match(/^(.+?[縺ｯ縺後ｒ縺ｫ縺ｸ縺ｧ縺ｨ])縲・.+)$/);
+      const topicMatch = normalizedPart.match(/^(.+?[はがをにへでと])、(.+)$/);
       if (!topicMatch) {
         return [normalizedPart];
       }
 
-      const head = normalizePart(`${topicMatch[1]}縲～);
+      const head = normalizePart(`${topicMatch[1]}、`);
       const tail = normalizePart(topicMatch[2]);
       return [head, tail].filter(Boolean);
     });
@@ -3139,28 +3141,28 @@ function splitGroupedTranslation(translation, originalTexts) {
     const clauseRatio = clauseCount > 1 ? clauseIndex / (clauseCount - 1) : 0;
     let score = -Math.abs(lineRatio - clauseRatio) * 2;
 
-    if (/especially|particularly|in particular/.test(english) && /迚ｹ縺ｫ|縺ｨ繧翫ｏ縺掃縺ｪ縺九〒繧・.test(japanese)) {
+    if (/especially|particularly|in particular/.test(english) && /特に|とりわけ|なかでも/.test(japanese)) {
       score += 6;
     }
-    if (/\bthink\b|it'?s like|seems?/.test(english) && /諤掟閠・∴|諢溘§|繧医≧縺ｪ繧ゅ・|豌励′/.test(japanese)) {
+    if (/\bthink\b|it'?s like|seems?/.test(english) && /思|考え|感じ|ようなもの|気が/.test(japanese)) {
       score += 9;
     }
-    if (/\bthink\b|it'?s like|seems?/.test(english) && /縺ｧ縺處縺ｾ縺處縺縺｣縺毫縺縺ｨ諤掟繧医≧縺ｪ繧ゅ・/.test(japanese)) {
+    if (/\bthink\b|it'?s like|seems?/.test(english) && /です|ます|だった|だと思|ようなもの/.test(japanese)) {
       score += 7;
     }
-    if (/\bquit\b|stop|give up|leave/.test(english) && /霎桍繧・ａ|豁｢|髮｢/.test(japanese)) {
+    if (/\bquit\b|stop|give up|leave/.test(english) && /辞|やめ|止|離/.test(japanese)) {
       score += 5;
     }
-    if (/\bkind\b|\bpeople\b|those|type/.test(english) && /莠ｺ|繧ｿ繧､繝慾繧医≧縺ｪ/.test(japanese)) {
+    if (/\bkind\b|\bpeople\b|those|type/.test(english) && /人|タイプ|ような/.test(japanese)) {
       score += 4;
     }
-    if (/\bjob\b|work|career/.test(english) && /莉穂ｺ弓閨ｷ|蜍､/.test(japanese)) {
+    if (/\bjob\b|work|career/.test(english) && /仕事|職|勤/.test(japanese)) {
       score += 4;
     }
-    if (/\bbig\b|huge|leap/.test(english) && /螟ｧ縺鋼鬟幄ｺ・.test(japanese)) {
+    if (/\bbig\b|huge|leap/.test(english) && /大き|飛躍/.test(japanese)) {
       score += 4;
     }
-    if (/\bgirl\b|woman|lady/.test(english) && /螂ｳ|螂ｳ諤ｧ|螂ｳ蟄・.test(japanese)) {
+    if (/\bgirl\b|woman|lady/.test(english) && /女|女性|女子/.test(japanese)) {
       score += 3;
     }
 
@@ -3229,15 +3231,15 @@ function splitGroupedTranslation(translation, originalTexts) {
 
     const rebalancedGroups = solution.groups.map((parts) => parts.slice());
     const hasPredicateClause = (parts) =>
-      parts.some((part) => /螟ｧ縺鋼鬟幄ｺ鋼諤掟閠・∴|諢溘§|繧医≧縺ｪ繧ゅ・|縺ｧ縺處縺ｾ縺處縺縺｣縺毫縺ｧ縺ゅｋ/.test(normalizePart(part)));
+      parts.some((part) => /大き|飛躍|思|考え|感じ|ようなもの|です|ます|だった|である/.test(normalizePart(part)));
     const hasEspeciallyClause = (parts) =>
-      parts.some((part) => /迚ｹ縺ｫ|縺ｨ繧翫ｏ縺掃縺ｪ縺九〒繧・.test(normalizePart(part)));
+      parts.some((part) => /特に|とりわけ|なかでも/.test(normalizePart(part)));
 
     const firstEnglish = String(sourceTexts[0] || "").toLowerCase();
     if (/\bthink\b|it'?s like|seems?|feel\b/.test(firstEnglish) && !hasPredicateClause(rebalancedGroups[0])) {
       for (let index = 1; index < rebalancedGroups.length; index += 1) {
         const clauseIndex = rebalancedGroups[index].findIndex((part) =>
-          /螟ｧ縺鋼鬟幄ｺ鋼諤掟閠・∴|諢溘§|繧医≧縺ｪ繧ゅ・|縺ｧ縺處縺ｾ縺處縺縺｣縺毫縺ｧ縺ゅｋ/.test(normalizePart(part))
+          /大き|飛躍|思|考え|感じ|ようなもの|です|ます|だった|である/.test(normalizePart(part))
         );
         if (clauseIndex >= 0) {
           const [predicateClause] = rebalancedGroups[index].splice(clauseIndex, 1);
@@ -3251,7 +3253,7 @@ function splitGroupedTranslation(translation, originalTexts) {
     if (/especially|particularly|in particular/.test(lastEnglish) && !hasEspeciallyClause(rebalancedGroups[expectedCount - 1])) {
       for (let index = 0; index < rebalancedGroups.length - 1; index += 1) {
         const clauseIndex = rebalancedGroups[index].findIndex((part) =>
-          /迚ｹ縺ｫ|縺ｨ繧翫ｏ縺掃縺ｪ縺九〒繧・.test(normalizePart(part))
+          /特に|とりわけ|なかでも/.test(normalizePart(part))
         );
         if (clauseIndex >= 0) {
           const [especiallyClause] = rebalancedGroups[index].splice(clauseIndex, 1);
@@ -3281,13 +3283,13 @@ function splitGroupedTranslation(translation, originalTexts) {
 
     const firstEnglish = String(sourceTexts[0] || "").toLowerCase();
     if (/\bthink\b|it'?s like|seems?|feel\b/.test(firstEnglish)) {
-      const predicateIndex = findClauseIndex((clause) => /諤掟閠・∴|諢溘§|繧医≧縺ｪ繧ゅ・|縺ｧ縺處縺ｾ縺處縺縺｣縺毫縺ｧ縺ゅｋ/.test(clause));
+      const predicateIndex = findClauseIndex((clause) => /思|考え|感じ|ようなもの|です|ます|だった|である/.test(clause));
       moveClause(predicateIndex, 0);
     }
 
     const lastEnglish = String(sourceTexts[sourceTexts.length - 1] || "").toLowerCase();
     if (/especially|particularly|in particular/.test(lastEnglish)) {
-      const especiallyIndex = findClauseIndex((clause) => /迚ｹ縺ｫ|縺ｨ繧翫ｏ縺掃縺ｪ縺九〒繧・.test(clause));
+      const especiallyIndex = findClauseIndex((clause) => /特に|とりわけ|なかでも/.test(clause));
       moveClause(especiallyIndex, nextClauses.length - 1);
     }
 
@@ -3301,7 +3303,7 @@ function splitGroupedTranslation(translation, originalTexts) {
     }
 
     const localClauseParts = reorderClausesForEnglishOrder(refineClauseParts(cleaned
-      .split(/(?<=縲・\s*|(?<=[縲ゑｼ・ｼ・?])\s*|\n+/)
+      .split(/(?<=、)\s*|(?<=[。！？!?])\s*|\n+/)
       .map(normalizePart)
       .filter(Boolean)));
     if (localClauseParts.length === expectedCount) {
@@ -3318,7 +3320,7 @@ function splitGroupedTranslation(translation, originalTexts) {
     }
 
     const localSentenceParts = cleaned
-      .split(/(?<=[縲ゑｼ・ｼ・?])\s+|\n+/)
+      .split(/(?<=[。！？!?])\s+|\n+/)
       .map(normalizePart)
       .filter(Boolean);
     if (localSentenceParts.length === expectedCount) {
@@ -3342,7 +3344,7 @@ function splitGroupedTranslation(translation, originalTexts) {
     return splitByWeights(cleaned).map(normalizePart);
   };
 
-  const markerRegex = /(?:__LINE_(\d+)__|\[\[(\d+)\]\]|縲・\d+)縲・\s*([\s\S]*?)(?=(?:\n?\s*(?:__LINE_\d+__|\[\[\d+\]\]|縲申d+縲・)|$)/g;
+  const markerRegex = /(?:__LINE_(\d+)__|\[\[(\d+)\]\]|【(\d+)】)\s*([\s\S]*?)(?=(?:\n?\s*(?:__LINE_\d+__|\[\[\d+\]\]|【\d+】))|$)/g;
   const markerMatches = Array.from(normalized.matchAll(markerRegex));
   if (markerMatches.length) {
     const parts = Array.from({ length: expectedCount }, () => "");
@@ -3436,7 +3438,7 @@ async function translateSubtitlesProgressively(videoId, requestId, basePayload, 
     updateSubtitleTranslations(
       mergedSubtitles,
       hasMoreChunks
-        ? `${basePayload.trackLabel} 繧定ｪｭ縺ｿ霎ｼ縺ｿ縺ｾ縺励◆縲ょ唱隱ｭ轤ｹ縺斐→縺ｫ鄙ｻ險ｳ荳ｭ縺ｧ縺・.. ${Math.min(startIndex + TRANSLATION_CHUNK_SIZE, translationGroups.length)}/${translationGroups.length}`
+        ? `${basePayload.trackLabel} を読み込みました。句読点ごとに翻訳中です... ${Math.min(startIndex + TRANSLATION_CHUNK_SIZE, translationGroups.length)}/${translationGroups.length}`
         : buildTranscriptStatus({ ...basePayload, subtitles: mergedSubtitles }, requestedLanguage)
     );
   }
@@ -3476,7 +3478,7 @@ async function translateSubtitlesProgressively(videoId, requestId, basePayload, 
     updateSubtitleTranslations(
       mergedSubtitles,
       hasMoreChunks
-        ? `${basePayload.trackLabel} 繧定ｪｭ縺ｿ霎ｼ縺ｿ縺ｾ縺励◆縲らｿｻ險ｳ荳ｭ縺ｧ縺・.. ${Math.min(startIndex + TRANSLATION_CHUNK_SIZE, baseSubtitles.length)}/${baseSubtitles.length}`
+        ? `${basePayload.trackLabel} を読み込みました。翻訳中です... ${Math.min(startIndex + TRANSLATION_CHUNK_SIZE, baseSubtitles.length)}/${baseSubtitles.length}`
         : buildTranscriptStatus({ ...basePayload, subtitles: mergedSubtitles }, requestedLanguage)
     );
   }
@@ -3493,7 +3495,7 @@ async function loadChannelVideos(sort = state.channelVideosSort, source = null) 
     channelId: state.selectedVideoMeta?.channelId || "",
     channelName: state.selectedVideoMeta?.channelName || ""
   };
-  elements.channelVideosStatus.textContent = "繝√Ε繝ｳ繝阪Ν蜍慕判繧定ｪｭ縺ｿ霎ｼ縺ｿ荳ｭ縺ｧ縺・..";
+  elements.channelVideosStatus.textContent = "チャンネル動画を読み込み中です...";
   const params = new URLSearchParams({ sort: String(sort || "latest") });
   if (state.channelVideosSource?.channelId) {
     params.set("channelId", state.channelVideosSource.channelId);
@@ -3507,12 +3509,12 @@ async function loadChannelVideos(sort = state.channelVideosSort, source = null) 
   state.channelVideos = payload.items || [];
 
   if (!state.channelVideos.length) {
-    elements.channelVideosStatus.textContent = `${payload.channelName || "縺薙・繝√Ε繝ｳ繝阪Ν"} 縺ｮ蜍慕判縺ｯ隕九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆縲Ａ;
-    renderEmptyState(elements.channelVideosList, "繝√Ε繝ｳ繝阪Ν蜍慕判繧定｡ｨ遉ｺ縺ｧ縺阪∪縺帙ｓ縺ｧ縺励◆縲・);
+    elements.channelVideosStatus.textContent = `${payload.channelName || "このチャンネル"} の動画は見つかりませんでした。`;
+    renderEmptyState(elements.channelVideosList, "チャンネル動画を表示できませんでした。");
     return;
   }
 
-  elements.channelVideosStatus.textContent = `${payload.channelName || "縺薙・繝√Ε繝ｳ繝阪Ν"} 縺ｮ蜍慕判繧・${sort === "popular" ? "莠ｺ豌鈴・ : "譛譁ｰ鬆・} 縺ｧ陦ｨ遉ｺ縺励※縺・∪縺吶Ａ;
+  elements.channelVideosStatus.textContent = `${payload.channelName || "このチャンネル"} の動画を ${sort === "popular" ? "人気順" : "最新順"} で表示しています。`;
   renderVideoList(elements.channelVideosList, state.channelVideos, handleVideoSelection);
 }
 
@@ -3524,7 +3526,7 @@ async function loadAutoTranscript(videoId, trackIndex = 0) {
   const initialLanguage = shouldFetchTranslationAfterEnglish ? "en" : requestedLanguage;
   state.translationPending = shouldFetchTranslationAfterEnglish;
 
-  setSubtitleStatus(shouldFetchTranslationAfterEnglish ? "闍ｱ隱槫ｭ怜ｹ輔ｒ蜿門ｾ励＠縺ｦ縺・∪縺・.." : "蟄怜ｹ輔ｒ蜿門ｾ励＠縺ｦ縺・∪縺・..");
+  setSubtitleStatus(shouldFetchTranslationAfterEnglish ? "英語字幕を取得しています..." : "字幕を取得しています...");
   const payload = await fetchTrackTranscript(videoId, trackIndex, {
     language: initialLanguage,
     provider: requestedProvider
@@ -3595,7 +3597,7 @@ async function loadAutoTranscript(videoId, trackIndex = 0) {
 async function handleVideoSelection(item, options = {}) {
   const videoId = parseYouTubeId(item.videoId || item.url || "");
   if (!videoId) {
-    window.alert("蜍慕判 ID 繧貞叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆縲・);
+    window.alert("動画 ID を取得できませんでした。");
     return;
   }
 
@@ -3625,11 +3627,11 @@ async function handleVideoSelection(item, options = {}) {
   state.cueGroupMap = [];
   state.activeIndex = -1;
   setTrackOptions([]);
-  renderEmptyState(elements.transcriptList, "蟄怜ｹ輔ｒ隱ｭ縺ｿ霎ｼ縺ｿ荳ｭ縺ｧ縺吶・);
-  elements.currentOriginal.textContent = "蟄怜ｹ輔ｒ隱ｭ縺ｿ霎ｼ縺ｿ荳ｭ縺ｧ縺吶・;
-  elements.currentTranslation.textContent = "鄙ｻ險ｳ繧呈ｺ門ｙ縺励※縺・∪縺吶・;
+  renderEmptyState(elements.transcriptList, "字幕を読み込み中です。");
+  elements.currentOriginal.textContent = "字幕を読み込み中です。";
+  elements.currentTranslation.textContent = "翻訳を準備しています。";
   clearRepeatMode(true);
-  setRepeatStatus("繝ｪ繝斐・繝医・繧ｪ繝輔〒縺吶・);
+  setRepeatStatus("リピートはオフです。");
 
   const transcriptPromise = state.autoFetch
     ? loadAutoTranscript(videoId, 0)
@@ -3656,8 +3658,8 @@ async function handleVideoSelection(item, options = {}) {
   }
 
   loadRecommendations(videoId).catch((error) => {
-    elements.recommendationStatus.textContent = error.message || "縺翫☆縺吶ａ蜍慕判縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆縲・;
-    renderEmptyState(elements.recommendations, "縺翫☆縺吶ａ蜍慕判繧定ｪｭ縺ｿ霎ｼ繧√∪縺帙ｓ縺ｧ縺励◆縲・);
+    elements.recommendationStatus.textContent = error.message || "おすすめ動画の取得に失敗しました。";
+    renderEmptyState(elements.recommendations, "おすすめ動画を読み込めませんでした。");
   });
   if (state.activePopover === "channel-videos") {
     loadChannelVideos(state.channelVideosSort, {
@@ -3672,8 +3674,8 @@ async function handleVideoSelection(item, options = {}) {
       await transcriptPromise;
     } catch (error) {
       setTrackOptions([]);
-      renderEmptyState(elements.transcriptList, "蟄怜ｹ輔ｒ閾ｪ蜍募叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆縲よ焔蜍募ｭ怜ｹ輔ヵ繧｡繧､繝ｫ繧ゆｽｿ縺医∪縺吶・);
-      setSubtitleStatus(error.message || "蟄怜ｹ輔ｒ閾ｪ蜍募叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆縲・);
+      renderEmptyState(elements.transcriptList, "字幕を自動取得できませんでした。手動字幕ファイルも使えます。");
+      setSubtitleStatus(error.message || "字幕を自動取得できませんでした。");
     }
   }
 }
@@ -3681,13 +3683,13 @@ async function handleVideoSelection(item, options = {}) {
 async function loadVideoFromInput() {
   const videoId = parseYouTubeId(elements.urlInput.value);
   if (!videoId) {
-    window.alert("譛牙柑縺ｪ YouTube URL 縺ｾ縺溘・ 11 譁・ｭ励・ Video ID 繧貞・蜉帙＠縺ｦ縺上□縺輔＞縲・);
+    window.alert("有効な YouTube URL または 11 文字の Video ID を入力してください。");
     return;
   }
 
   await handleVideoSelection({
     videoId,
-    title: "YouTube蜍慕判",
+    title: "YouTube動画",
     channelName: "",
     lengthText: "",
     viewCountText: "",
@@ -3709,35 +3711,35 @@ async function handleSubtitleFile(file) {
     subtitles = parseVttLikeSubtitles(content, "vtt");
   }
 
-  applySubtitleData(subtitles, `${file.name} 繧定ｪｭ縺ｿ霎ｼ縺ｿ縺ｾ縺励◆縲・{subtitles.length} 莉ｶ縺ｮ蟄怜ｹ輔′縺ゅｊ縺ｾ縺吶Ａ);
+  applySubtitleData(subtitles, `${file.name} を読み込みました。${subtitles.length} 件の字幕があります。`);
 }
 
 elements.searchButton.addEventListener("click", () => {
   loadSearch(elements.searchQuery.value).catch((error) => {
-    elements.searchStatus.textContent = error.message || "讀懃ｴ｢縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・;
-    renderEmptyState(elements.searchResults, "讀懃ｴ｢邨先棡繧貞叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆縲・);
+    elements.searchStatus.textContent = error.message || "検索に失敗しました。";
+    renderEmptyState(elements.searchResults, "検索結果を取得できませんでした。");
   });
 });
 
 elements.searchQuery.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     loadSearch(elements.searchQuery.value).catch((error) => {
-      elements.searchStatus.textContent = error.message || "讀懃ｴ｢縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・;
-      renderEmptyState(elements.searchResults, "讀懃ｴ｢邨先棡繧貞叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆縲・);
+      elements.searchStatus.textContent = error.message || "検索に失敗しました。";
+      renderEmptyState(elements.searchResults, "検索結果を取得できませんでした。");
     });
   }
 });
 
 elements.loadVideoButton.addEventListener("click", () => {
   loadVideoFromInput().catch((error) => {
-    setSubtitleStatus(error.message || "蜍慕判縺ｮ隱ｭ縺ｿ霎ｼ縺ｿ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+    setSubtitleStatus(error.message || "動画の読み込みに失敗しました。");
   });
 });
 
 elements.urlInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     loadVideoFromInput().catch((error) => {
-      setSubtitleStatus(error.message || "蜍慕判縺ｮ隱ｭ縺ｿ霎ｼ縺ｿ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+      setSubtitleStatus(error.message || "動画の読み込みに失敗しました。");
     });
   }
 });
@@ -3751,7 +3753,7 @@ elements.subtitleFile.addEventListener("change", async (event) => {
   try {
     await handleSubtitleFile(file);
   } catch (error) {
-    window.alert(error.message || "蟄怜ｹ輔ヵ繧｡繧､繝ｫ繧定ｪｭ縺ｿ霎ｼ繧√∪縺帙ｓ縺ｧ縺励◆縲・);
+    window.alert(error.message || "字幕ファイルを読み込めませんでした。");
   }
 });
 
@@ -3763,7 +3765,7 @@ elements.subtitleTrack.addEventListener("change", async (event) => {
   try {
     await loadAutoTranscript(state.currentVideoId, Number(event.target.value));
   } catch (error) {
-    setSubtitleStatus(error.message || "蟄怜ｹ輔ヨ繝ｩ繝・け縺ｮ蛻・ｊ譖ｿ縺医↓螟ｱ謨励＠縺ｾ縺励◆縲・);
+    setSubtitleStatus(error.message || "字幕トラックの切り替えに失敗しました。");
   }
 });
 
@@ -3776,7 +3778,7 @@ elements.translationLanguage.addEventListener("change", async (event) => {
   try {
     await loadAutoTranscript(state.currentVideoId, state.currentTrackIndex);
   } catch (error) {
-    setSubtitleStatus(error.message || "鄙ｻ險ｳ險隱槭・蛻・ｊ譖ｿ縺医↓螟ｱ謨励＠縺ｾ縺励◆縲・);
+    setSubtitleStatus(error.message || "翻訳言語の切り替えに失敗しました。");
   }
 });
 
@@ -3789,7 +3791,7 @@ elements.translationProvider.addEventListener("change", async (event) => {
   try {
     await loadAutoTranscript(state.currentVideoId, state.currentTrackIndex);
   } catch (error) {
-    setSubtitleStatus(error.message || "鄙ｻ險ｳ謇区ｮｵ縺ｮ蛻・ｊ譖ｿ縺医↓螟ｱ謨励＠縺ｾ縺励◆縲・);
+    setSubtitleStatus(error.message || "翻訳手段の切り替えに失敗しました。");
   }
 });
 
@@ -3830,8 +3832,8 @@ elements.channelVideosToggle?.addEventListener("click", () => {
       channelId: state.selectedVideoMeta?.channelId || "",
       channelName: state.selectedVideoMeta?.channelName || ""
     }, elements.channelSort?.value || state.channelVideosSort).catch((error) => {
-      elements.channelVideosStatus.textContent = error.message || "繝√Ε繝ｳ繝阪Ν蜍慕判縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆縲・;
-      renderEmptyState(elements.channelVideosList, "繝√Ε繝ｳ繝阪Ν蜍慕判繧定ｪｭ縺ｿ霎ｼ繧√∪縺帙ｓ縺ｧ縺励◆縲・);
+      elements.channelVideosStatus.textContent = error.message || "チャンネル動画の取得に失敗しました。";
+      renderEmptyState(elements.channelVideosList, "チャンネル動画を読み込めませんでした。");
     });
   }
 });
@@ -3844,8 +3846,8 @@ elements.channelSort?.addEventListener("change", (event) => {
   state.channelVideosSort = event.target.value;
   if (state.activePopover === "channel-videos") {
     loadChannelVideos(state.channelVideosSort, state.channelVideosSource).catch((error) => {
-      elements.channelVideosStatus.textContent = error.message || "繝√Ε繝ｳ繝阪Ν蜍慕判縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆縲・;
-      renderEmptyState(elements.channelVideosList, "繝√Ε繝ｳ繝阪Ν蜍慕判繧定ｪｭ縺ｿ霎ｼ繧√∪縺帙ｓ縺ｧ縺励◆縲・);
+      elements.channelVideosStatus.textContent = error.message || "チャンネル動画の取得に失敗しました。";
+      renderEmptyState(elements.channelVideosList, "チャンネル動画を読み込めませんでした。");
     });
   }
 });
@@ -3948,7 +3950,7 @@ elements.jumpCurrent.addEventListener("click", () => {
 
 elements.loadSample.addEventListener("click", () => {
   setTrackOptions([]);
-  applySubtitleData(sampleSubtitles, `繧ｵ繝ｳ繝励Ν蟄怜ｹ輔ｒ隱ｭ縺ｿ霎ｼ縺ｿ縺ｾ縺励◆縲・{sampleSubtitles.length} 莉ｶ縺ｮ蟄怜ｹ輔′縺ゅｊ縺ｾ縺吶Ａ);
+  applySubtitleData(sampleSubtitles, `サンプル字幕を読み込みました。${sampleSubtitles.length} 件の字幕があります。`);
 });
 
 elements.seekBack10.addEventListener("click", () => seekBy(-10));
@@ -4045,8 +4047,8 @@ function updateFavoriteButton() {
 
   const active = Boolean(state.currentVideoId) && isFavorite(state.currentVideoId);
   elements.toggleFavorite.classList.toggle("is-active", active);
-  elements.toggleFavorite.setAttribute("aria-label", active ? "縺頑ｰ励↓蜈･繧頑ｸ医∩" : "縺頑ｰ励↓蜈･繧・);
-  elements.toggleFavorite.innerHTML = `<span aria-hidden="true">${active ? "笙･" : "笙｡"}</span>`;
+  elements.toggleFavorite.setAttribute("aria-label", active ? "お気に入り済み" : "お気に入り");
+  elements.toggleFavorite.innerHTML = `<span aria-hidden="true">${active ? "♥" : "♡"}</span>`;
 }
 
 function updatePlaybackButton() {
@@ -4054,9 +4056,9 @@ function updatePlaybackButton() {
     && state.player?.getPlayerState
     && state.player.getPlayerState() === window.YT?.PlayerState?.PLAYING;
 
-  elements.togglePlayback?.setAttribute("aria-label", isPlaying ? "荳譎ょ●豁｢" : "蜀咲函");
+  elements.togglePlayback?.setAttribute("aria-label", isPlaying ? "一時停止" : "再生");
   if (elements.togglePlayback) {
-    elements.togglePlayback.innerHTML = `<span class="transport-play-icon" aria-hidden="true">${isPlaying ? "笶壺撓" : "笆ｶ"}</span>`;
+    elements.togglePlayback.innerHTML = `<span class="transport-play-icon" aria-hidden="true">${isPlaying ? "❚❚" : "▶"}</span>`;
   }
 }
 
@@ -4074,8 +4076,8 @@ function updateActiveCue(index, forceScroll = false) {
   const cue = state.subtitles[index];
   if (!cue) {
     elements.currentCueTime.textContent = "00:00 - 00:00";
-    elements.currentOriginal.textContent = "蟄怜ｹ輔・縺ｾ縺縺ゅｊ縺ｾ縺帙ｓ縲・;
-    elements.currentTranslation.textContent = "蜍慕判繧貞・逕溘☆繧九→縲√％縺薙↓迴ｾ蝨ｨ縺ｮ蟄怜ｹ輔′陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶・;
+    elements.currentOriginal.textContent = "字幕はまだありません。";
+    elements.currentTranslation.textContent = "動画を再生すると、ここに現在の字幕が表示されます。";
     updateRepeatButtons();
     updateTransportUI();
     return;
@@ -4083,7 +4085,7 @@ function updateActiveCue(index, forceScroll = false) {
 
   elements.currentCueTime.textContent = `${formatTime(cue.start)} - ${formatTime(cue.end)}`;
   elements.currentOriginal.innerHTML = renderWordMarkup(cue.text);
-  elements.currentTranslation.textContent = cue.translation || "鄙ｻ險ｳ縺ｯ縺ゅｊ縺ｾ縺帙ｓ縲・;
+  elements.currentTranslation.textContent = cue.translation || "翻訳はありません。";
   bindWordLookup(elements.currentOriginal, cue.text);
 
   const activeNode = elements.transcriptList.querySelector(`[data-index="${index}"]`);
@@ -4118,7 +4120,7 @@ async function openDictionaryForWord(word, options = {}) {
   elements.dictionaryPopup.classList.remove("hidden");
   elements.dictionaryWord.textContent = normalizedWord;
   elements.dictionaryPhonetic.textContent = "";
-  elements.dictionaryBody.innerHTML = "<p>霎樊嶌繧定ｪｭ縺ｿ霎ｼ縺ｿ荳ｭ縺ｧ縺・..</p>";
+  elements.dictionaryBody.innerHTML = "<p>辞書を読み込み中です...</p>";
   const context = options.context || options.savedItem?.context || state.subtitles[state.activeIndex]?.text || "";
   state.dictionaryEntry = {
     word: normalizedWord,
@@ -4141,7 +4143,7 @@ async function openDictionaryForWord(word, options = {}) {
     updateSaveWordButton();
     playDictionaryAudio(state.dictionaryEntry);
   } catch (error) {
-    elements.dictionaryBody.innerHTML = `<p>${escapeHtml(error.message || "霎樊嶌諠・ｱ縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆縲・)}</p>`;
+    elements.dictionaryBody.innerHTML = `<p>${escapeHtml(error.message || "辞書情報の取得に失敗しました。")}</p>`;
     updateSaveWordButton();
   }
 }
@@ -4339,18 +4341,18 @@ function updateRepeatButtons() {
 function setRepeatMode(mode) {
   state.repeatMode = mode;
   if (!mode) {
-    setRepeatStatus("繝ｪ繝斐・繝医・繧ｪ繝輔〒縺吶・);
+    setRepeatStatus("リピートはオフです。");
     updateRepeatButtons();
     return;
   }
 
   if (mode.type === "cue") {
-    setRepeatStatus(`蟄怜ｹ・${mode.index + 1} 繧偵Μ繝斐・繝井ｸｭ縺ｧ縺吶Ａ);
+    setRepeatStatus(`字幕 ${mode.index + 1} をリピート中です。`);
     updateRepeatButtons();
     return;
   }
 
-  setRepeatStatus(`蟄怜ｹ・${mode.index + 1} 縺ｨ谺｡縺ｮ蟄怜ｹ輔ｒ繝ｪ繝斐・繝井ｸｭ縺ｧ縺吶Ａ);
+  setRepeatStatus(`字幕 ${mode.index + 1} と次の字幕をリピート中です。`);
   updateRepeatButtons();
 }
 
@@ -4397,13 +4399,13 @@ function repeatCue(index) {
   seekTo(cue.start, true);
 }
 
-renderEmptyState(elements.searchResults, "讀懃ｴ｢邨先棡縺ｯ縺薙％縺ｫ陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶・);
-renderEmptyState(elements.recommendations, "縺翫☆縺吶ａ蜍慕判縺ｯ縺薙％縺ｫ陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶・);
-renderEmptyState(elements.channelVideosList, "縺薙・蜍慕判縺ｮ繝√Ε繝ｳ繝阪Ν荳隕ｧ縺ｯ縺薙％縺ｫ陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶・);
-renderEmptyState(elements.transcriptList, "蟄怜ｹ輔ｒ隱ｭ縺ｿ霎ｼ繧縺ｨ縲√％縺薙↓繧ｿ繧､繝繧ｹ繧ｿ繝ｳ繝嶺ｸ隕ｧ縺瑚｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶・);
+renderEmptyState(elements.searchResults, "検索結果はここに表示されます。");
+renderEmptyState(elements.recommendations, "おすすめ動画はここに表示されます。");
+renderEmptyState(elements.channelVideosList, "この動画のチャンネル一覧はここに表示されます。");
+renderEmptyState(elements.transcriptList, "字幕を読み込むと、ここにタイムスタンプ一覧が表示されます。");
 updateNowPlaying();
 setTrackOptions([]);
-setRepeatStatus("繝ｪ繝斐・繝医・繧ｪ繝輔〒縺吶・);
+setRepeatStatus("リピートはオフです。");
 applyFontSizeMode(state.fontSizeMode);
 applyTranscriptVisibility(state.transcriptTextMode);
 elements.currentCueTime.textContent = "00:00 - 00:00";
@@ -4433,4 +4435,3 @@ updateRepeatButtons();
 startInitialBootstrap();
 elements.urlInput.value = `https://www.youtube.com/watch?v=${getInitialVideoMeta().videoId || DEFAULT_VIDEO_ID}`;
 elements.searchQuery.value = "";
-
