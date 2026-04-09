@@ -197,6 +197,8 @@ select {
 
 .transport-progress {
   margin-top: 2px;
+  position: relative;
+  z-index: 1;
 }
 
 .time-rail {
@@ -559,8 +561,9 @@ select {
 .compact-load-field {
   margin-top: 0;
   position: relative;
-  z-index: 120;
+  z-index: 140;
   isolation: isolate;
+  touch-action: auto;
 }
 
 .compact-load-field span {
@@ -2422,4 +2425,5 @@ body.device-tablet {
     overflow: visible;
   }
 }
+
 

@@ -138,6 +138,8 @@ function enableDirectTextInput(input) {
     return;
   }
 
+  const field = input.closest(".compact-load-field, .search-field, .field");
+
   const focusInput = () => {
     window.setTimeout(() => {
       input.focus({ preventScroll: true });
@@ -147,19 +149,29 @@ function enableDirectTextInput(input) {
     }, 0);
   };
 
-  input.addEventListener("pointerdown", (event) => {
+  const swallow = (event, shouldFocus = false) => {
     event.stopPropagation();
-  });
+    if (typeof event.stopImmediatePropagation === "function") {
+      event.stopImmediatePropagation();
+    }
+    if (shouldFocus) {
+      focusInput();
+    }
+  };
 
-  input.addEventListener("touchstart", (event) => {
-    event.stopPropagation();
-    focusInput();
-  }, { passive: true });
+  const bindTarget = (target, shouldFocus = false) => {
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    target.addEventListener("pointerdown", (event) => swallow(event, shouldFocus));
+    target.addEventListener("mousedown", (event) => swallow(event, shouldFocus));
+    target.addEventListener("touchstart", (event) => swallow(event, shouldFocus), { passive: false });
+    target.addEventListener("touchmove", (event) => swallow(event, false), { passive: false });
+    target.addEventListener("click", (event) => swallow(event, shouldFocus));
+  };
 
-  input.addEventListener("click", (event) => {
-    event.stopPropagation();
-    focusInput();
-  });
+  bindTarget(field, false);
+  bindTarget(input, true);
 }
 
 function loadYouTubeIframeApi() {
