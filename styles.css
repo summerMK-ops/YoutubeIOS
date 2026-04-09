@@ -2285,7 +2285,7 @@ body.device-tablet {
   }
 
   body.device-tablet .current-line {
-    padding-right: 108px;
+    padding-right: 0;
     font-size: 1rem;
     line-height: 1.3;
     min-height: 2.6em;
@@ -2309,33 +2309,11 @@ body.device-tablet {
   }
 
   body.device-tablet .current-subtitle-actions {
-    display: flex;
-    top: 8px;
-    right: 8px;
-    gap: 6px;
+    display: none;
   }
 
   body.device-tablet .current-line-label {
-    display: block;
-    margin-bottom: 0;
-    color: var(--accent);
-    font-size: 0.66rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  body.device-tablet .current-subtitle-action {
-    width: 28px;
-    min-width: 28px;
-    height: 28px;
-    min-height: 28px;
-    font-size: 0.82rem;
-  }
-
-  body.device-tablet .current-subtitle-action-ai {
-    min-width: 38px;
-    padding: 0 6px;
-    font-size: 0.64rem;
+    display: none;
   }
 
   body.device-tablet .transport-progress {
@@ -2362,7 +2340,7 @@ body.device-tablet {
   }
 
   body.device-tablet .cue.active .cue-action-group {
-    display: none;
+    display: inline-flex;
   }
 
   body.device-tablet .search-panel .section-title p,
@@ -2403,5 +2381,12 @@ body.device-tablet {
     right: auto;
     left: auto;
     bottom: auto;
+  }
+
+  body.device-tablet.keyboard-open .player-panel,
+  body.device-tablet.keyboard-open .control-panel,
+  body.device-tablet.keyboard-open .transcript-panel,
+  body.device-tablet.keyboard-open .search-panel {
+    overflow: visible;
   }
 }

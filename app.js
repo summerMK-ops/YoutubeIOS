@@ -103,6 +103,9 @@ function applyDeviceLayout() {
   const deviceLayout = detectDeviceLayout();
   document.body.classList.remove("device-phone", "device-tablet", "device-desktop");
   document.body.classList.add(`device-${deviceLayout}`);
+  if (typeof syncTabletContentLayout === "function") {
+    syncTabletContentLayout(deviceLayout);
+  }
 }
 
 function syncKeyboardOpenState() {
@@ -282,6 +285,60 @@ const elements = {
   repeatCurrentCue: document.getElementById("repeat-current-cue"),
   repeatCurrentGroup: document.getElementById("repeat-current-group")
 };
+
+const layoutNodes = {
+  playerPanel: document.querySelector(".player-panel"),
+  controlPanel: document.querySelector(".control-panel"),
+  playerWrap: document.querySelector(".player-wrap"),
+  currentSubtitleBox: document.querySelector(".current-subtitle-box"),
+  loadField: document.querySelector(".compact-load-field"),
+  transportControls: document.querySelector(".player-controls.transport-controls"),
+  secondaryControls: document.querySelector(".player-secondary-controls.compact-secondary-controls")
+};
+
+const layoutHomes = {
+  currentSubtitleBox: layoutNodes.currentSubtitleBox
+    ? { parent: layoutNodes.currentSubtitleBox.parentNode, nextSibling: layoutNodes.currentSubtitleBox.nextSibling }
+    : null,
+  loadField: layoutNodes.loadField
+    ? { parent: layoutNodes.loadField.parentNode, nextSibling: layoutNodes.loadField.nextSibling }
+    : null
+};
+
+function restoreLayoutNode(node, home) {
+  if (!node || !home?.parent) {
+    return;
+  }
+
+  if (home.nextSibling && home.nextSibling.parentNode === home.parent) {
+    home.parent.insertBefore(node, home.nextSibling);
+    return;
+  }
+
+  home.parent.appendChild(node);
+}
+
+function syncTabletContentLayout(deviceLayout = detectDeviceLayout()) {
+  if (!layoutNodes.currentSubtitleBox || !layoutNodes.loadField) {
+    return;
+  }
+
+  if (deviceLayout === "tablet") {
+    if (layoutNodes.playerPanel && layoutNodes.playerWrap && layoutNodes.currentSubtitleBox.parentNode !== layoutNodes.playerPanel) {
+      layoutNodes.playerPanel.insertBefore(layoutNodes.currentSubtitleBox, layoutNodes.playerWrap.nextSibling);
+    }
+
+    if (layoutNodes.controlPanel && layoutNodes.secondaryControls && layoutNodes.loadField.parentNode !== layoutNodes.controlPanel) {
+      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.secondaryControls);
+    } else if (layoutNodes.controlPanel && layoutNodes.transportControls && layoutNodes.loadField.parentNode !== layoutNodes.controlPanel) {
+      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.transportControls.nextSibling);
+    }
+    return;
+  }
+
+  restoreLayoutNode(layoutNodes.currentSubtitleBox, layoutHomes.currentSubtitleBox);
+  restoreLayoutNode(layoutNodes.loadField, layoutHomes.loadField);
+}
 
 const HEARGAP_TAG_OPTIONS = ["連結", "脱落", "弱形", "flap T", "省略", "強勢"];
 const HEARGAP_WEAK_WORDS = new Set(["a", "an", "and", "are", "as", "at", "for", "from", "of", "or", "the", "to", "was", "were", "you"]);
