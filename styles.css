@@ -559,7 +559,7 @@ select {
 .compact-load-field {
   margin-top: 0;
   position: relative;
-  z-index: 8;
+  z-index: 120;
   isolation: isolate;
 }
 
@@ -571,7 +571,7 @@ select {
 .compact-load-field input[type="text"],
 .compact-load-field #load-video {
   position: relative;
-  z-index: 8;
+  z-index: 120;
   pointer-events: auto;
 }
 
@@ -585,12 +585,17 @@ select {
 #youtube-url,
 #search-query {
   position: relative;
-  z-index: 8;
+  z-index: 120;
   pointer-events: auto;
   -webkit-user-select: text;
   user-select: text;
   -webkit-touch-callout: default;
   touch-action: manipulation;
+}
+
+.compact-load-field,
+.compact-load-field * {
+  pointer-events: auto;
 }
 
 .control-panel .time-label {
@@ -1605,7 +1610,7 @@ body.transcript-english-only .cue-translation {
   }
 }
 
-@media (max-width: 1440px) {
+@media (max-width: 1600px) {
   body {
     overflow: auto;
   }
@@ -2094,7 +2099,7 @@ body.device-tablet {
   --font-scale: 0.92;
 }
 
-@media (max-width: 1440px) {
+@media (max-width: 1600px) {
   body.device-tablet .workspace {
     grid-template-columns: minmax(0, 1fr) 360px;
     grid-template-rows: auto auto minmax(0, 1fr);

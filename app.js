@@ -89,8 +89,15 @@ function detectDeviceLayout() {
   const userAgent = navigator.userAgent || "";
   const isAppleTablet = /iPad/.test(userAgent) || (navigator.platform === "MacIntel" && touchPoints > 1);
   const isTouchDevice = touchPoints > 0 || /iPad|iPhone|iPod/.test(userAgent);
+  const isCoarsePointer = typeof window.matchMedia === "function"
+    ? window.matchMedia("(pointer: coarse)").matches
+    : false;
 
   if (isAppleTablet) {
+    return "tablet";
+  }
+
+  if (isCoarsePointer && width >= 768 && width <= 1600) {
     return "tablet";
   }
 
