@@ -14,7 +14,35 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260409-05">
+  <script>
+    (() => {
+      const version = "20260409-09";
+      const versionKey = "youtubeioshome-app-version";
+      const refreshKey = `youtubeioshome-refresh-${version}`;
+      const previousVersion = localStorage.getItem(versionKey);
+
+      localStorage.setItem(versionKey, version);
+
+      if (!previousVersion || previousVersion === version || sessionStorage.getItem(refreshKey)) {
+        return;
+      }
+
+      sessionStorage.setItem(refreshKey, "1");
+
+      const targetUrl = `${location.pathname}?v=${encodeURIComponent(version)}`;
+      const clearCaches = ("caches" in window)
+        ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+        : Promise.resolve();
+      const clearWorkers = ("serviceWorker" in navigator)
+        ? navigator.serviceWorker.getRegistrations().then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+        : Promise.resolve();
+
+      Promise.allSettled([clearCaches, clearWorkers]).finally(() => {
+        location.replace(targetUrl);
+      });
+    })();
+  </script>
+  <link rel="stylesheet" href="./styles.css?v=20260409-09">
 </head>
 <body class="font-small">
   <div class="app-shell">
@@ -362,7 +390,7 @@
     </nav>
   </div>
 
-  <script src="./app.js?v=20260409-08"></script>
+  <script src="./app.js?v=20260409-09"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
