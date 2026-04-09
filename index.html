@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260409-03">
+  <link rel="stylesheet" href="./styles.css?v=20260409-05">
 </head>
 <body class="font-small">
   <div class="app-shell">
@@ -47,6 +47,7 @@
       <section class="panel control-panel">
         <p id="current-cue-time" class="sr-only">00:00 - 00:00</p>
         <div class="current-subtitle-box current-copy-cache" aria-hidden="true">
+          <span class="mini-label current-line-label">Current line</span>
           <div class="current-subtitle-actions">
             <button id="ai-search-current-inline" class="ghost current-subtitle-action current-subtitle-action-ai" type="button" aria-label="Open ChatGPT">AI</button>
             <button id="copy-current-group" class="ghost current-subtitle-action current-subtitle-action-group-copy" type="button" aria-label="Copy current sentence group" data-label-default="&#182;" data-feedback-label="&#10003;">&#182;</button>
@@ -361,7 +362,7 @@
     </nav>
   </div>
 
-  <script src="./app.js?v=20260409-02"></script>
+  <script src="./app.js?v=20260409-07"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {

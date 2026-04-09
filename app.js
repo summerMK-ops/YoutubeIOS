@@ -39,7 +39,7 @@ const state = {
   translationProvider: "google",
   translationPending: false,
   fontSizeMode: "small",
-  transcriptVisible: true,
+  transcriptTextMode: "both",
   activePopover: null,
   pendingResumeTime: 0,
   lastSavedSecond: -1,
@@ -103,6 +103,18 @@ function applyDeviceLayout() {
   const deviceLayout = detectDeviceLayout();
   document.body.classList.remove("device-phone", "device-tablet", "device-desktop");
   document.body.classList.add(`device-${deviceLayout}`);
+}
+
+function syncKeyboardOpenState() {
+  const active = document.activeElement;
+  const isTextInput = active instanceof HTMLElement
+    && (
+      active.matches('input[type="text"]')
+      || active.matches('input[type="search"]')
+      || active.matches('input:not([type])')
+      || active.matches("textarea")
+    );
+  document.body.classList.toggle("keyboard-open", Boolean(isTextInput));
 }
 
 function loadYouTubeIframeApi() {
@@ -1546,23 +1558,40 @@ function applyFontSizeMode(mode) {
   }
 }
 
-function applyTranscriptVisibility(visible) {
-  state.transcriptVisible = visible !== false;
-  document.body.classList.toggle("transcript-hidden", !state.transcriptVisible);
+function applyTranscriptVisibility(mode) {
+  const nextMode = ["both", "english", "hidden"].includes(mode)
+    ? mode
+    : (mode === false ? "hidden" : "both");
+
+  state.transcriptTextMode = nextMode;
+  document.body.classList.toggle("transcript-hidden", nextMode === "hidden");
+  document.body.classList.toggle("transcript-english-only", nextMode === "english");
   if (elements.transcriptVisibilityToggle) {
-    elements.transcriptVisibilityToggle.textContent = state.transcriptVisible ? "文字ON" : "文字OFF";
-    elements.transcriptVisibilityToggle.setAttribute("aria-pressed", state.transcriptVisible ? "false" : "true");
-    elements.transcriptVisibilityToggle.setAttribute("aria-label", state.transcriptVisible ? "Hide transcript text" : "Show transcript text");
-    elements.transcriptVisibilityToggle.classList.toggle("is-active", !state.transcriptVisible);
+    const labels = {
+      both: "文字ON",
+      english: "英文のみ",
+      hidden: "文字OFF"
+    };
+    elements.transcriptVisibilityToggle.textContent = labels[nextMode];
+    elements.transcriptVisibilityToggle.setAttribute("aria-pressed", nextMode === "hidden" ? "true" : "false");
+    elements.transcriptVisibilityToggle.setAttribute("aria-label", `Transcript mode: ${labels[nextMode]}`);
+    elements.transcriptVisibilityToggle.classList.toggle("is-active", nextMode !== "both");
   }
 
-  if (elements.transcriptList && !state.transcriptVisible) {
+  if (elements.transcriptList && nextMode === "hidden") {
     elements.transcriptList.scrollTop = 0;
   }
 
-  if (state.transcriptVisible && state.activeIndex >= 0) {
+  if (nextMode !== "hidden" && state.activeIndex >= 0) {
     updateActiveCue(state.activeIndex, true);
   }
+}
+
+function cycleTranscriptVisibilityMode() {
+  const order = ["both", "english", "hidden"];
+  const currentIndex = order.indexOf(state.transcriptTextMode);
+  const nextMode = order[(currentIndex + 1 + order.length) % order.length];
+  applyTranscriptVisibility(nextMode);
 }
 
 function updatePipButton() {
@@ -3809,7 +3838,7 @@ elements.pipToggle?.addEventListener("click", () => {
 });
 
 elements.transcriptVisibilityToggle?.addEventListener("click", () => {
-  applyTranscriptVisibility(!state.transcriptVisible);
+  cycleTranscriptVisibilityMode();
 });
 
 elements.jumpCurrent.addEventListener("click", () => {
@@ -4277,7 +4306,7 @@ updateNowPlaying();
 setTrackOptions([]);
 setRepeatStatus("リピートはオフです。");
 applyFontSizeMode(state.fontSizeMode);
-applyTranscriptVisibility(state.transcriptVisible);
+applyTranscriptVisibility(state.transcriptTextMode);
 elements.currentCueTime.textContent = "00:00 - 00:00";
 updateTransportUI();
 syncViewportHeight();
@@ -4287,6 +4316,10 @@ window.addEventListener("resize", applyDeviceLayout);
 window.visualViewport?.addEventListener("resize", syncViewportHeight);
 window.visualViewport?.addEventListener("scroll", syncViewportHeight);
 window.visualViewport?.addEventListener("resize", applyDeviceLayout);
+document.addEventListener("focusin", syncKeyboardOpenState);
+document.addEventListener("focusout", () => {
+  window.setTimeout(syncKeyboardOpenState, 0);
+});
 closeAllPopovers();
 renderFavorites();
 renderFavoriteChannels();
