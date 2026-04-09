@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   <script>
     (() => {
-      const version = "20260409-13";
+      const version = "20260409-14";
       const versionKey = "youtubeioshome-app-version";
       const refreshKey = `youtubeioshome-refresh-${version}`;
       const previousVersion = localStorage.getItem(versionKey);
@@ -42,7 +42,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260409-13">
+  <link rel="stylesheet" href="./styles.css?v=20260409-14">
 </head>
 <body class="font-small">
   <div class="app-shell">
@@ -106,7 +106,7 @@
 
         <div class="player-secondary-controls compact-secondary-controls">
           <button id="open-heargap-sheet" class="ghost compact-icon-button compact-heargap-button" type="button" aria-label="Open HearGap">HearGap</button>
-          <button id="ai-search-current" class="ghost compact-icon-button compact-ai-button" type="button" aria-label="Open ChatGPT">AI検索</button>
+          <button id="ai-search-current" class="ghost compact-icon-button compact-ai-button" type="button" aria-label="Open ChatGPT">AI讀懃ｴ｢</button>
           <button id="channel-videos-toggle" class="ghost compact-icon-button" type="button" aria-label="Open current channel videos">CH</button>
           <button id="toggle-favorite-channel" class="ghost compact-icon-button compact-channel-favorite-button" type="button" aria-label="Favorite current channel">CH&#9734;</button>
           <button id="toggle-favorite" class="ghost compact-icon-button" type="button" aria-label="Favorite">&#9825;</button>
@@ -125,7 +125,7 @@
               <option value="2">2.0x</option>
             </select>
           </label>
-          <button id="transcript-visibility-toggle" class="ghost compact-icon-button compact-transcript-visibility-button" type="button" aria-label="Hide transcript text" aria-pressed="false">文字ON</button>
+          <button id="transcript-visibility-toggle" class="ghost compact-icon-button compact-transcript-visibility-button" type="button" aria-label="Hide transcript text" aria-pressed="false">譁・ｭ涌N</button>
         </div>
 
         <label class="field compact-load-field">
@@ -216,16 +216,16 @@
       <div class="side-popover-header">
         <div>
           <h3>Channel Videos</h3>
-          <p id="channel-videos-status" class="panel-status">この動画のチャンネル一覧を表示します。</p>
+          <p id="channel-videos-status" class="panel-status">縺薙・蜍慕判縺ｮ繝√Ε繝ｳ繝阪Ν荳隕ｧ繧定｡ｨ遉ｺ縺励∪縺吶・/p>
         </div>
         <button id="channel-close" class="ghost icon-button icon-button-small" type="button">Close</button>
       </div>
       <div class="channel-toolbar">
         <label class="field channel-sort-field">
-          <span>並び順</span>
+          <span>荳ｦ縺ｳ鬆・/span>
           <select id="channel-sort">
-            <option value="latest">最新動画順</option>
-            <option value="popular">人気順</option>
+            <option value="latest">譛譁ｰ蜍慕判鬆・/option>
+            <option value="popular">莠ｺ豌鈴・/option>
           </select>
         </label>
       </div>
@@ -335,7 +335,7 @@
       <div class="heargap-sheet-header">
         <p class="mini-label">HearGap</p>
         <div class="heargap-header-actions">
-          <button id="heargap-visual-toggle" class="ghost icon-button icon-button-small" type="button">音変化 ON</button>
+          <button id="heargap-visual-toggle" class="ghost icon-button icon-button-small" type="button">髻ｳ螟牙喧 ON</button>
           <button id="close-heargap-sheet" class="ghost icon-button icon-button-small" type="button">Close</button>
         </div>
       </div>
@@ -354,8 +354,8 @@
             <button id="heargap-play" class="primary control-button" type="button">Play Line</button>
           </div>
           <div class="heargap-control-row heargap-control-row-nav">
-            <button id="heargap-prev" class="ghost control-button" type="button">前へ</button>
-            <button id="heargap-next" class="ghost control-button" type="button">次へ</button>
+            <button id="heargap-prev" class="ghost control-button" type="button">蜑阪∈</button>
+            <button id="heargap-next" class="ghost control-button" type="button">谺｡縺ｸ</button>
           </div>
           <div class="heargap-control-row heargap-control-row-secondary">
             <button id="heargap-loop" class="ghost control-button" type="button" aria-pressed="false">LoopOff</button>
@@ -390,7 +390,7 @@
     </nav>
   </div>
 
-  <script src="./app.js?v=20260409-13"></script>
+  <script src="./app.js?v=20260409-14"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
@@ -410,3 +410,4 @@
   </script>
 </body>
 </html>
+
