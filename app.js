@@ -343,6 +343,7 @@ const elements = {
 const layoutNodes = {
   playerPanel: document.querySelector(".player-panel"),
   controlPanel: document.querySelector(".control-panel"),
+  searchPanel: document.querySelector(".search-panel"),
   playerWrap: document.querySelector(".player-wrap"),
   currentSubtitleBox: document.querySelector(".current-subtitle-box"),
   loadField: document.querySelector(".compact-load-field"),
@@ -378,16 +379,10 @@ function syncTabletContentLayout(deviceLayout = detectDeviceLayout()) {
   }
 
   if (deviceLayout === "tablet") {
-    if (layoutNodes.playerPanel && layoutNodes.playerWrap && layoutNodes.currentSubtitleBox.parentNode !== layoutNodes.playerPanel) {
-      layoutNodes.playerPanel.insertBefore(layoutNodes.currentSubtitleBox, layoutNodes.playerWrap.nextSibling);
-    }
+    restoreLayoutNode(layoutNodes.currentSubtitleBox, layoutHomes.currentSubtitleBox);
 
-    if (layoutNodes.controlPanel && layoutNodes.secondaryControls && layoutNodes.loadField.parentNode !== layoutNodes.controlPanel) {
-      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.secondaryControls.nextSibling);
-    } else if (layoutNodes.controlPanel && layoutNodes.secondaryControls) {
-      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.secondaryControls.nextSibling);
-    } else if (layoutNodes.controlPanel && layoutNodes.transportControls && layoutNodes.loadField.parentNode !== layoutNodes.controlPanel) {
-      layoutNodes.controlPanel.insertBefore(layoutNodes.loadField, layoutNodes.transportControls.nextSibling);
+    if (layoutNodes.searchPanel && layoutNodes.loadField.parentNode !== layoutNodes.searchPanel) {
+      layoutNodes.searchPanel.insertBefore(layoutNodes.loadField, layoutNodes.searchPanel.firstChild);
     }
     return;
   }
