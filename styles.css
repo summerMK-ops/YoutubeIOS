@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --app-height: 100vh;
   --bg-accent: radial-gradient(circle at top left, rgba(53, 88, 106, 0.32), transparent 28%),
     radial-gradient(circle at top right, rgba(117, 78, 64, 0.26), transparent 26%),
@@ -2231,8 +2231,19 @@ body.device-tablet {
     font-size: 0.82rem;
   }
 
+  body.device-tablet .compact-load-field {
+    order: 4;
+    margin-top: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    background: rgba(10, 16, 26, 0.82);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
   body.device-tablet .compact-load-field span {
     display: block;
+    margin-bottom: 6px;
   }
 
   body.device-tablet .compact-load-field .inline-input {
@@ -2411,3 +2422,4 @@ body.device-tablet {
     overflow: visible;
   }
 }
+
